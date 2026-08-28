@@ -1,0 +1,5 @@
+git clone https://github.com/OsamaAhmed444/online-store-dashboard
+
+git pull قبل البدء في العمل 
+
+git push بعد الانتهاء من اي تعديل
