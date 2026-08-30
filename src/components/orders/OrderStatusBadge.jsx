@@ -1,7 +1,20 @@
 import React from 'react'
 
-export default function OrderStatusBadge() {
+const statusColors = {
+  pending: 'warning',
+  processing: 'info',
+  shipped: 'info',
+  delivered: 'success'
+}
+
+export function OrderStatusBadge({ status }) {
+  const colorClass = statusColors[status] || 'info'
+
   return (
-    <div>OrderStatusBadge</div>
+    <span
+      className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-${colorClass}-100 text-${colorClass}-800`}
+    >
+      {status}
+    </span>
   )
 }
