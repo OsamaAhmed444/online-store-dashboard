@@ -3,7 +3,8 @@ import { ToastContainer } from 'react-toastify'
 
 import ProtectedRoute from './routes/ProtectedRoute'
 import DashboardLayout from './components/layout/DashboardLayout'
-
+import Button from "./components/common/Button";
+import Input from "./components/common/Input";
 import LoginPage from './pages/LoginPage'
 import DashboardHome from './pages/DashboardHome'
 import ProductsListPage from './pages/ProductsListPage'
@@ -46,3 +47,7 @@ export default function App() {
     </>
   )
 }
+ 
+
+
+ 
