@@ -1,7 +1,12 @@
 import api from "./axios";
 
-export const getProducts = () => {
-  return api.get("/products");
+export const getProducts = (filters = {}) => {
+  return api.get("/products", {
+    params: {
+      ...filters,
+      category: "team-1-products",
+    },
+  });
 };
 
 export const addProduct = (data) => {
