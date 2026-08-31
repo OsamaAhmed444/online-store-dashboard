@@ -24,7 +24,7 @@ export function AuthProvider({ children }) {
 
       const data = response.data;
 
-      localStorage.setItem("token", data.token);
+      sessionStorage.setItem("token", data.token);
       setToken(data.token);
       setUser(data.user);
 
@@ -39,7 +39,7 @@ export function AuthProvider({ children }) {
     try {
       await logoutApi();
     } finally {
-      localStorage.removeItem("token");
+      sessionStorage.removeItem("token");
       setUser(null);
       setToken(null);
     }

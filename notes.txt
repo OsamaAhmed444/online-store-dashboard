@@ -232,3 +232,159 @@ Admin password in source code     ❌
 Admin password in .env.example    ❌
 Token in localStorage             ❌
 Authentication cookie              ✅ HttpOnly
+
+
+3. src/api/axios.js — Outputs
+Shared Axios Client
+├── Uses VITE_API_URL                 ✅
+├── Single Axios instance             ✅
+├── withCredentials: true             ✅
+├── Sends authentication cookies      ✅
+├── Reusable across all API files     ✅
+└── No duplicate Axios clients        ✅
+Request Flow
+Frontend Page
+      ↓
+API Function
+      ↓
+axios.js
+      ↓
+withCredentials: true
+      ↓
+Authentication Cookie
+      ↓
+Backend API
+Authentication
+Login
+ ↓
+Backend sets HttpOnly cookie
+ ↓
+Browser stores cookie
+ ↓
+Axios sends cookie automatically
+ ↓
+Protected API works
+
+STATUS: Axios Client → DONE ✅
+
+5. src/routes/ProtectedRoute.jsx — Outputs
+ProtectedRoute
+├── Checks authentication           ⏳
+├── Checks authenticated user       ⏳
+├── Checks user.role === "admin"    ⏳
+├── Blocks unauthenticated users    ⏳
+├── Blocks non-admin users          ⏳
+└── Allows admin users              ⏳
+Expected Flow
+/dashboard
+      ↓
+ProtectedRoute
+      ↓
+Authenticated?
+   ↙       ↘
+ NO         YES
+ ↓           ↓
+/login    role === "admin"?
+             ↙      ↘
+           NO        YES
+           ↓          ↓
+        Block       Dashboard
+
+STATUS: ProtectedRoute → NOT DONE YET ⏳
+
+6. Dashboard Routing — Outputs
+Routing
+├── /login                  ⏳
+├── /dashboard              ⏳
+├── /dashboard protected   ⏳
+└── ProtectedRoute wrapper ⏳
+Expected Result
+User
+ ↓
+/dashboard
+ ↓
+ProtectedRoute
+ ↓
+Admin authenticated?
+ ↓
+Dashboard
+
+STATUS: Dashboard Protection → NOT DONE YET ⏳
+
+7. Logout — Outputs
+
+We tested the backend side:
+
+POST /auth/logout
+        ↓
+200 OK                    ✅
+        ↓
+Set-Cookie token=         ✅
+        ↓
+Expires in the past       ✅
+
+But the frontend/browser session is still remaining, so:
+
+logout()
+   ↓
+/auth/logout              ✅
+   ↓
+Cookie cleared by API     ⚠️
+   ↓
+Frontend user cleared     ⏳
+   ↓
+isAuthenticated = false   ⏳
+   ↓
+/dashboard blocked       ⏳
+
+STATUS: Logout → NEEDS FIXING ⚠️
+
+8. API Testing — Outputs
+
+We've already confirmed the protected API layer works with the cookie:
+
+AUTH
+├── Login                    ✅
+├── Get Me                   ✅
+└── Logout endpoint          ✅
+
+USERS
+├── Get Users                ✅
+└── Get User                 ✅
+
+PRODUCTS
+├── Get Products             ✅
+├── Search Products          ✅
+├── Get Product              ✅
+├── Add Product              ✅
+├── Update Product           ✅
+└── Delete Product           ✅
+
+ORDERS
+├── Dashboard Stats          ✅
+├── Get Carts                ✅
+├── Get Orders               ✅
+├── Get Order                ✅
+└── Update Order Status      ✅
+
+WISHLISTS
+├── Get Wishlists            ✅
+└── Wishlist Stats           ✅
+
+STATUS: API Layer → DONE ✅
+
+Final Task Status
+1. API Documentation       ✅ DONE
+2. Environment             ✅ DONE
+3. Axios Client            ✅ DONE
+4. AuthContext             🟡 MOSTLY DONE
+5. ProtectedRoute           ⏳ TODO
+6. Dashboard Routing        ⏳ TODO
+7. Logout                   ⚠️ NEEDS FIX
+8. API Functions            ✅ DONE
+9. API Testing              ✅ DONE
+10. Security                ✅ DONE
+
+So the only real work left for this Phase 0 task is:
+
+Logout fix → ProtectedRoute → Dashboard route protection → final test.
