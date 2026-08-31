@@ -24,6 +24,7 @@ export function AuthProvider({ children }) {
 
       const data = response.data;
 
+      localStorage.setItem("token", data.token);
       setToken(data.token);
       setUser(data.user);
 
@@ -38,6 +39,7 @@ export function AuthProvider({ children }) {
     try {
       await logoutApi();
     } finally {
+      localStorage.removeItem("token");
       setUser(null);
       setToken(null);
     }
@@ -46,11 +48,20 @@ export function AuthProvider({ children }) {
   // Restore session after refresh
   useEffect(() => {
     const restoreSession = async () => {
+      const savedToken = sessionStorage.getItem("token");
+
+      if (!savedToken) {
+        setLoading(false);
+        return;
+      }
+
       try {
         const response = await getMe();
 
+        setToken(savedToken);
         setUser(response.data.user);
       } catch (error) {
+        sessionStorage.removeItem("token");
         setUser(null);
         setToken(null);
       } finally {

@@ -1,1 +1,115 @@
 @import "tailwindcss";
+
+/*
+  Warm Orange theme.
+  Raw palette comes straight from the design reference:
+  #FFF7ED, #FFEDD5, #FB923C, #F97316, #9CA3AF, #1F2937.
+  Semantic tokens below are what components should actually use
+  (bg-background, text-foreground, bg-primary, etc.) so the whole
+  app reads from one source of truth and dark mode is a single
+  variable swap instead of per-component overrides.
+*/
+@theme {
+  /* raw palette */
+  --color-warm-50: #fff7ed;
+  --color-warm-100: #ffedd5;
+  --color-warm-400: #fb923c;
+  --color-warm-500: #f97316;
+  --color-warm-600: #ea580c;
+  --color-slate-400: #9ca3af;
+  --color-slate-800: #1f2937;
+
+  /* semantic tokens - light (default) */
+  --color-background: var(--color-warm-50);
+  --color-foreground: var(--color-slate-800);
+
+  --color-card: #ffffff;
+  --color-card-foreground: var(--color-slate-800);
+
+  --color-sidebar: #ffffff;
+  --color-sidebar-foreground: var(--color-slate-800);
+
+  --color-muted: var(--color-warm-100);
+  --color-muted-foreground: var(--color-slate-400);
+
+  --color-border: var(--color-warm-100);
+  --color-input: var(--color-warm-100);
+  --color-ring: var(--color-warm-500);
+
+  --color-primary: var(--color-warm-500);
+  --color-primary-hover: var(--color-warm-600);
+  --color-primary-foreground: #ffffff;
+
+  --color-accent: var(--color-warm-400);
+  --color-accent-foreground: #ffffff;
+
+  --color-success: #16a34a;
+  --color-warning: #f59e0b;
+  --color-danger: #dc2626;
+}
+
+/* Dark mode is opt-in only, via a theme toggle setting
+   <html data-theme="dark">. Light (the tokens in @theme above) is
+   always the default - it does NOT follow OS prefers-color-scheme. */
+[data-theme="dark"] {
+  --color-background: #0a0a0a;
+  --color-foreground: #f9fafb;
+
+  --color-card: #131316;
+  --color-card-foreground: #f9fafb;
+
+  --color-sidebar: #0a0a0a;
+  --color-sidebar-foreground: #f9fafb;
+
+  --color-muted: #1f2023;
+  --color-muted-foreground: var(--color-slate-400);
+
+  --color-border: #27272a;
+  --color-input: #27272a;
+  --color-ring: var(--color-warm-500);
+
+  --color-primary: var(--color-warm-500);
+  --color-primary-hover: var(--color-warm-400);
+  --color-primary-foreground: #0a0a0a;
+
+  --color-accent: var(--color-warm-400);
+  --color-accent-foreground: #0a0a0a;
+
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+}
+
+/* Apply the tokens site-wide so they override Tailwind Preflight /
+   browser defaults everywhere, not just inside styled components. */
+@layer base {
+  html {
+    color-scheme: light;
+  }
+
+  html[data-theme="dark"] {
+    color-scheme: dark;
+  }
+
+  *,
+  *::before,
+  *::after {
+    border-color: var(--color-border);
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    background-color: var(--color-background) !important;
+    color: var(--color-foreground) !important;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  a {
+    color: inherit;
+  }
+}
