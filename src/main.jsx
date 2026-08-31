@@ -5,7 +5,7 @@ import 'react-toastify/dist/ReactToastify.css'
 import './index.css'
 
 import App from './App'
-import { AuthProvider } from './context/AuthContext'
+import  {AuthProvider}  from './context/AuthContext'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
@@ -15,4 +15,5 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       </AuthProvider>
     </BrowserRouter>
   </React.StrictMode>
+  
 )
