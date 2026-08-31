@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 // Import Swiper React components
+import { Navigate, useNavigate } from "react-router-dom";
 import { Swiper, SwiperSlide } from "swiper/react";
 
 // Import Swiper styles
@@ -7,7 +8,7 @@ import "swiper/css";
 import "swiper/css/pagination";
 import "swiper/css/navigation";
 import { Autoplay } from "swiper/modules";
-
+import Button from "../common/Button";
 // import required modules
 import { Pagination, Navigation } from "swiper/modules";
 import { Eye } from "lucide-react";
@@ -27,10 +28,12 @@ const arr = [
   },
 ];
 
-export default function ProductTable({ products ,setProducts}) {
+export default function ProductTable({ products, setProducts }) {
 
-  function handleDelete(id){
-setProducts(products.filter((pro)=>pro._id !== id))
+
+  const navigate = useNavigate()
+  function handleDelete(id) {
+    setProducts(products.filter((pro) => pro._id !== id));
   }
   return (
     <div className="flex flex-col gap-2">
@@ -41,9 +44,14 @@ setProducts(products.filter((pro)=>pro._id !== id))
               key={product._id}
               className="border rounded-lg overflow-hidden relative border-blue-800"
             >
-              <button className="absolute top-4 z-10 left-4 bg-amber-500 flex gap-1 items-center justify-center rounded-lg py-1 px-2 cursor-text"><Star size={13} /><span className="text-[11px]" style={{ color: "var(--text)" }}>Featured</span></button>
-              
-                {/* <div
+              <button className="absolute top-4 z-10 left-4 bg-amber-500 flex gap-1 items-center justify-center rounded-lg py-1 px-2 cursor-text">
+                <Star size={13} />
+                <span className="text-[11px]" style={{ color: "var(--text)" }}>
+                  Featured
+                </span>
+              </button>
+
+              {/* <div
                   className="rounded flex gap-1 items-center justify-center absolute top-4 left-4 z-10"
                   style={{ background: "var(--primary)" }}
                 >
@@ -54,8 +62,11 @@ setProducts(products.filter((pro)=>pro._id !== id))
                 </div> */}
 
               <div className="border  h-64 overflow-hidden group product border-red-600 relative">
-                 <button className="absolute z-10  bg-amber-500 rounded-xl absolute z-10 right-4 bottom-4 text-[13px] py-1 px-2">{product.stock>0?`${product.stock} in Stock`:"Out Of Stock"}</button>
-                
+                <Button className="absolute z-10  bg-amber-500 rounded-xl absolute z-10 right-4 bottom-4 text-[13px] py-1 px-2">
+                  {product.stock > 0
+                    ? `${product.stock} in Stock`
+                    : "Out Of Stock"}
+                </Button>
 
                 <Swiper
                   className="w-full h-full"
@@ -82,7 +93,6 @@ setProducts(products.filter((pro)=>pro._id !== id))
                     </SwiperSlide>
                   ))}
                 </Swiper>
-              
               </div>
 
               <div className="min-h-60">
@@ -116,7 +126,23 @@ setProducts(products.filter((pro)=>pro._id !== id))
                 <div className="flex gap-1 py-2">
                   {arr.map((item) => {
                     return (
-                      <button className="ml-8 flex gap-1 items-center p-1 px-2 rounded-lg bg-gray-300">
+                      <button
+                        className="ml-8 flex gap-1 items-center p-1 px-2 rounded-lg bg-gray-300"
+                        onClick={() => {
+                          if (item.text === "View") {
+                          
+                          
+                            navigate(`/dashboard/products/${product._id}/view`);
+                          }
+                          else if(item.text === "Edit"){
+                              navigate(`/dashboard/products/${product._id}/edit`);
+
+                          }else{
+                              navigate(`/dashboard/products/${product._id}/quickedit`);
+
+                          }
+                        }}
+                      >
                         <span>{item.icon}</span>
                         <span className="text-[11px]">{item.text}</span>
                       </button>
@@ -125,10 +151,13 @@ setProducts(products.filter((pro)=>pro._id !== id))
                 </div>
 
                 <div className="flex justify-end">
-                  <button className="bg-gray-300 rounded-lg flex gap-1  py-1 px-2 mr-4 text-[11px] cursor-pointer" onClick={()=>handleDelete(product._id)}>
+                  <Button
+                    className="bg-gray-300 rounded-lg flex gap-1  py-1 px-2 mr-4 text-[11px] cursor-pointer"
+                    onClick={() => handleDelete(product._id)}
+                  >
                     <Trash2 size={15} />
                     <span>Delete</span>
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>

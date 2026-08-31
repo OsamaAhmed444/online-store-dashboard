@@ -9,6 +9,8 @@ import { Boxes } from "lucide-react";
 import { SlidersHorizontal } from "lucide-react";
 import { Search } from "lucide-react";
 import { Tag } from "lucide-react";
+import Button from "../components/common/Button";
+import { useNavigate } from "react-router-dom";
 
 export default function ProductsListPage() {
   const [products, setProducts] = useState([]);
@@ -17,6 +19,7 @@ export default function ProductsListPage() {
   const [category, setCategory] = useState("all");
   const [subcategory, setsubCategory] = useState("");
   const [lodding, setLodding] = useState(true);
+  
   console.log(category);
   useEffect(() => {
     async function getData() {
@@ -89,6 +92,7 @@ export default function ProductsListPage() {
     return true;
   });
 
+
   return (
     <div className="bg-gray-100 m-10 border border-amber-300">
       <div className="flex flex-col m-10">
@@ -133,7 +137,7 @@ export default function ProductsListPage() {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 md:gap-4 col-span-12 sm:col-span-5 ">
-              <button
+              <Button
                 onClick={handlefilter}
                 className="bg-blue-400 p-2 cursor-pointer rounded-lg flex justify-center items-center gap-1 md:gap-2 sm:flex-1 "
               >
@@ -141,13 +145,13 @@ export default function ProductsListPage() {
                   <SlidersHorizontal size={15} className="text-sm" />
                 </span>
                 <span className="text-xlg">Filter</span>
-              </button>
-              <button className="bg-blue-400 p-2 cursor-pointer flex-1 rounded-lg flex justify-center items-center gap-1 sm:flex-1">
+              </Button>
+              <Button className="bg-blue-400 p-2 cursor-pointer flex-1 rounded-lg flex justify-center items-center gap-1 sm:flex-1">
                 <span>
                   <Search size={15} />
                 </span>
                 <span>Search</span>
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -217,6 +221,7 @@ export default function ProductsListPage() {
 }
 
 function AddProductButton() {
+    const navigate = useNavigate()
   return (
     <div className="flex flex-col gap-4 md:gap-0 md:flex-row md:justify-between md:items-center p-4 border rounded-2xl mb-10 ">
       <div className="flex gap-4 items-center">
@@ -230,12 +235,12 @@ function AddProductButton() {
       </div>
 
       <div>
-        <button className="w-full group flex gap-2 items-center justify-center border rounded-sm py-1.5 px-3">
+        <Button className="w-full group flex gap-2 items-center justify-center border rounded-sm py-1.5 px-3" onClick={()=> {navigate("/dashboard/products/add")} }>
           <span className="inline-block transition-all duration-200 group-hover:rotate-90 text-lg leading-none">
             <Plus />
           </span>
           <span className="inline-block text-sm font-bold">Add Product</span>
-        </button>
+        </Button>
       </div>
     </div>
   );
