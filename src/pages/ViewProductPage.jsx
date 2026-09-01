@@ -2,6 +2,8 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getProductById } from "../api/product";
+import Spinner from "../components/common/Spinner";
+import EmptyState from "../components/common/EmptyState";
 
 function ViewProductPage() {
 
@@ -43,16 +45,14 @@ function ViewProductPage() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-[400px]">
-        <p className="text-xl">Loading...</p>
-      </div>
+    <Spinner/>
     );
   }
 
   if (error) {
     return (
       <div className="p-6 text-red-500">
-        {error}
+        <EmptyState/>
       </div>
     );
   }
@@ -69,11 +69,11 @@ function ViewProductPage() {
     <div className="p-6 bg-slate-100 min-h-screen">
 
       {/* Header */}
-      <div className="bg-gradient-to-r from-slate-950 to-slate-800 text-white rounded-3xl p-8 mb-6">
+      <div className="bg-gradient-to-r from-orange-100 to-white rounded-3xl p-8 mb-6">
 
         <button
           onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-gray-300 hover:text-white mb-6"
+          className="flex items-center gap-2  mb-6 cursor-pointer"
         >
           ← Back
         </button>
@@ -88,7 +88,7 @@ function ViewProductPage() {
               {product.name}
             </h1>
 
-            <p className="text-gray-400">
+            <p className="">
               Product details overview
             </p>
           </div>
@@ -101,12 +101,22 @@ function ViewProductPage() {
         {/* LEFT - IMAGE */}
         <div className="col-span-7">
           <div className="bg-white rounded-3xl overflow-hidden shadow-sm">
+            {product.images.map((img,index)=>{
+            return  <div key={index}>
+                 <img
+              src={img.url}
+              alt={product.name}
+              className="w-full h-[400px] object-cover"
+            />
+            </div>
 
-            <img
+            })}
+
+            {/* <img
               src={product.images[0].url}
               alt={product.name}
               className="w-full h-[450px] object-cover"
-            />
+            /> */}
 
           </div>
         </div>

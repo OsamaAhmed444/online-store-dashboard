@@ -11,7 +11,10 @@ import { Search } from "lucide-react";
 import { Tag } from "lucide-react";
 import Button from "../components/common/Button";
 import { useNavigate } from "react-router-dom";
-
+import { getProducts } from "../api/product";
+import Pagination from "../components/common/Pagination";
+import EmptyState from "../components/common/EmptyState";
+import Spinner from "../components/common/Spinner";
 export default function ProductsListPage() {
   const [products, setProducts] = useState([]);
   const [showFilter, setShowFilter] = useState(false);
@@ -22,6 +25,22 @@ export default function ProductsListPage() {
   
   console.log(category);
   useEffect(() => {
+  //   const fetchData=async()=>{
+  //     try{
+  //        const filters = category === "all"
+  //       ? {}
+  //       : { category: category };
+  //       console.log(filters)
+  //     const res=await getProducts(filters)
+  //     setProducts(res.data.products)
+  //     console.log(res.data.products)
+  //   }
+  //   catch(error){
+  //     console.log(error)
+  //   }
+  // }
+  // fetchData()
+  
     async function getData() {
       try {
         const data = await axios.get(
@@ -50,22 +69,22 @@ export default function ProductsListPage() {
 
   const arr = [
     {
-      icon: <Package2 />,
+      icon: <Package2 className="text-[var(--text)]  "/>,
       num: total,
       text: "Total",
     },
     {
-      icon: <Star />,
+      icon: <Star  className="text-[var(--text)]"/>,
       num: featured,
       text: "Featured",
     },
     {
-      icon: <TrendingUp />,
+      icon: <TrendingUp className="text-[var(--text)]" />,
       num: inStock,
       text: "In Stock",
     },
     {
-      icon: <Boxes />,
+      icon: <Boxes  className="text-[var(--text)]"/>,
       num: outStock,
       text: "Out of Stock",
     },
@@ -92,24 +111,30 @@ export default function ProductsListPage() {
     return true;
   });
 
+    const [currentPage, setCurrentPage] = useState(1);
+const productsPerPage = 6;
+const totalPages = Math.ceil(filterProducts.length / productsPerPage);
 
+const startIndex = (currentPage - 1) * productsPerPage;
+const endIndex = startIndex + productsPerPage;
+
+const currentProducts = filterProducts.slice(startIndex, endIndex);
   return (
-    <div className="bg-gray-100 m-10 border border-amber-300">
-      <div className="flex flex-col m-10">
+    <div className="bg-gray-100 m-10 border rounded-2xl " style={{background:"var(--surface)" ,border:"1px solid var(--border-strong)"}}>
+      <div className="flex flex-col m-10 ">
         {lodding ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="loader"></div>
-          </div>
+        <Spinner/>
         ) : (
-          <AddProductButton />
+          <AddProductButton  />
         )}
 
-        <div className="grid gap-4 grid-cols-2 md:grid-cols-4 mb-10">
+        <div className="grid gap-4 grid-cols-2 md:grid-cols-4 mb-10" >
           {arr.map((item, index) => {
             return (
               <div
                 key={index}
                 className="border flex flex-col gap-2 px-6 py-8 rounded-2xl"
+                style={{background:"var(--surface)" ,border:"1px solid var(--border-strong)"}}
               >
                 <div>{item.icon}</div>
                 <div>
@@ -121,32 +146,33 @@ export default function ProductsListPage() {
           })}
         </div>
 
-        <div className="border p-4 rounded-2xl">
-          <div className="grid grid-cols-12 gap-4 ">
-            <div className="col-span-12 sm:col-span-7 relative">
+        <div className="border p-4 rounded-2xl" style={{background:"var(--surface)" ,border:"1px solid var(--border-strong)"}}>
+          <div className="grid grid-cols-12 gap-4 py-4">
+            <div className="col-span-12 sm:col-span-6 md:col-span-8 relative" >
               <Search
                 size={25}
                 className="absolute pl-2 top-1/2 left-1 opacity-30  -translate-y-1/2"
               />
               <input
+            
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search Products"
-                className="border w-full p-2 rounded-lg pl-8 "
+                className=" w-full py-4 rounded-lg pl-8 border border-[var(--input)]  focus:border-[var(--input-focus)] focus:outline-none"
               />
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-4 md:gap-4 col-span-12 sm:col-span-5 ">
+            <div className="flex flex-col sm:flex-row gap-4 md:gap-4 col-span-12 sm:col-span-6 md:col-span-4" >
               <Button
                 onClick={handlefilter}
-                className="bg-blue-400 p-2 cursor-pointer rounded-lg flex justify-center items-center gap-1 md:gap-2 sm:flex-1 "
+                className="  cursor-pointer rounded-lg flex justify-center items-center gap-1 md:gap-2 sm:flex-1 "
               >
                 <span>
                   <SlidersHorizontal size={15} className="text-sm" />
                 </span>
                 <span className="text-xlg">Filter</span>
               </Button>
-              <Button className="bg-blue-400 p-2 cursor-pointer flex-1 rounded-lg flex justify-center items-center gap-1 sm:flex-1">
+              <Button className=" p-2 cursor-pointer flex-1 rounded-lg flex justify-center items-center gap-1 sm:flex-1">
                 <span>
                   <Search size={15} />
                 </span>
@@ -155,8 +181,8 @@ export default function ProductsListPage() {
             </div>
           </div>
 
-          <div className={`${showFilter ? "block" : "hidden"} mt-4`}>
-            <hr></hr>
+          <div className={`${showFilter ? "block" : "hidden"} mt-4`} >
+            <hr style={{background:"var(--surface)" ,border:"1px solid var(--border-strong)"}}></hr>
 
             <div className="grid grid-cols-12 gap-4 py-4 w-full">
               <div className="flex flex-col col-span-12 sm:col-span-6 gap-2 w-full">
@@ -166,21 +192,22 @@ export default function ProductsListPage() {
                 </div>
 
                 <select
-                  className="w-full border p-2 rounded-lg"
+                  className="w-full border p-2 rounded-lg border-[var(--input)]  focus:border-[var(--input-focus)] focus:outline-none"
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
+                  style={{background:"var(--surface)"}}
                 >
                   <option value="all">All</option>
                   <option value="electronics">Electronics</option>
-                  <option value="Phones">Phones</option>
-                  <option value="Fashion">Fashion</option>
-                  <option value="Home">Home</option>
-                  <option value="Beauty">Beauty</option>
-                  <option value="Sports">Sports</option>
+                  <option value="phones">Phones</option>
+                  <option value="fashion">Fashion</option>
+                  <option value="home">Home</option>
+                  <option value="beauty">Beauty</option>
+                  <option value="sports">Sports</option>
                 </select>
               </div>
 
-              <div className="flex flex-col col-span-12 sm:col-span-6 gap-2">
+              <div className="flex flex-col col-span-12 sm:col-span-6 gap-2"   >
                 <div className="flex gap-2 items-center">
                   <Tag size={15} />
                   <p>Category</p>
@@ -188,9 +215,9 @@ export default function ProductsListPage() {
 
                 <input
                   value={subcategory}
-                  onChange={(e) => setsubCategory(e)}
+                  onChange={(e) => setsubCategory(e.target.value)}
                   placeholder="e.g SmartPhones"
-                  className="w-full border p-2 rounded-lg"
+                  className="w-full border p-2 rounded-lg border-[var(--input)]  focus:border-[var(--input-focus)] focus:outline-none"
                 />
               </div>
               {/* / */}
@@ -209,13 +236,13 @@ export default function ProductsListPage() {
         <ProductTable products={filterProducts} />
       )} */}
         {lodding ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="loader"></div>
-          </div>
-        ) : (
-          <ProductTable products={filterProducts} setProducts={setProducts} />
+        <Spinner/>
+        ) : (currentProducts.length!==0?
+          <ProductTable products={currentProducts} setProducts={setProducts} lodding={lodding} setLodding={setLodding}/>:<EmptyState/>
         )}
       </div>
+
+          {currentProducts.length!==0?<Pagination setCurrentPage={setCurrentPage} totalPages={totalPages} currentPage={currentPage}/>:""}
     </div>
   );
 }
@@ -223,8 +250,8 @@ export default function ProductsListPage() {
 function AddProductButton() {
     const navigate = useNavigate()
   return (
-    <div className="flex flex-col gap-4 md:gap-0 md:flex-row md:justify-between md:items-center p-4 border rounded-2xl mb-10 ">
-      <div className="flex gap-4 items-center">
+    <div className="flex flex-col gap-4 md:gap-0 md:flex-row md:justify-between md:items-center p-4 border rounded-2xl mb-10 bg-gradient-to-r from-orange-100 to-white" style={{ border:"1px solid var(--border-strong)"}}>
+      <div className="flex gap-4 items-center py-6" >
         <div className="border p-2 rounded-lg">
           <Package2 />
         </div>
@@ -235,13 +262,15 @@ function AddProductButton() {
       </div>
 
       <div>
-        <Button className="w-full group flex gap-2 items-center justify-center border rounded-sm py-1.5 px-3" onClick={()=> {navigate("/dashboard/products/add")} }>
+        <Button className="w-full group flex gap-2 items-center justify-center border py-3 px-3 rounded-2xl shadow-[0_4px_12px_rgba(249,115,22,0.25)]" onClick={()=> {navigate("/dashboard/products/add")} }>
           <span className="inline-block transition-all duration-200 group-hover:rotate-90 text-lg leading-none">
             <Plus />
           </span>
           <span className="inline-block text-sm font-bold">Add Product</span>
         </Button>
       </div>
+
+  
     </div>
   );
 }
