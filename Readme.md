@@ -16,67 +16,23 @@ npm run dev
 
 ## 🎨 Color Palette
 
-To be filled in once the design system is locked with the team. Everyone pulls from this table — nobody picks a color by eye.
+Warm Orange theme. Components should use the semantic token names (`bg-background`, `text-foreground`, `bg-primary`, etc.), not the raw hex values — that keeps everything reading from one source of truth and makes dark mode a single variable swap.
 
 | Usage | Name | Hex | Notes |
 |---|---|---|---|
-| Primary | — | `#______` | Main buttons, active nav links |
-| Secondary | — | `#______` | |
-| Background | — | `#______` | Page background |
-| Surface / Card | — | `#______` | Tables, cards, modals |
-| Text — Primary | — | `#______` | |
-| Text — Muted | — | `#______` | Labels, secondary text |
-| Border | — | `#______` | Table and card borders |
-| Success | — | `#______` | Success toasts, "Delivered" status |
-| Warning | — | `#______` | "Pending" status |
-| Danger | — | `#______` | Delete buttons, error states |
-| Info | — | `#______` | "Processing" / "Shipped" status |
+| Primary | `primary` | `#F97316` | Main buttons, active nav links |
+| Secondary / Accent | `accent` | `#FB923C` | Secondary actions, highlights |
+| Background | `background` | `#FFF7ED` | Page background |
+| Surface / Card | `card` | `#FFFFFF` | Tables, cards, modals |
+| Text — Primary | `foreground` | `#1F2937` | |
+| Text — Muted | `muted-foreground` | `#9CA3AF` | Labels, secondary text |
+| Border | `border` | `#FFEDD5` | Table and card borders |
+| Success | `success` | `#16A34A` | Success toasts, "Delivered" status |
+| Warning | `warning` | `#F59E0B` | "Pending" status |
+| Danger | `danger` | `#DC2626` | Delete buttons, error states |
+| Info | — | — | Not defined in the theme yet. Until it is, use `accent` (`#FB923C`) for "Processing" / "Shipped" status. |
 
-> Once the Figma file is ready, swap this table for an actual palette swatch/screenshot.
-
----
-
-## 🔗 Figma Links
-
-### Pages
-
-| Page | Route | Figma link |
-|---|---|---|
-| Login | `/login` | _pending_ |
-| Dashboard Home | `/dashboard` | _pending_ |
-| Products List | `/dashboard/products` | _pending_ |
-| Add Product | `/dashboard/products/new` | _pending_ |
-| Edit Product | `/dashboard/products/:id/edit` | _pending_ |
-| Orders List | `/dashboard/orders` | _pending_ |
-| Order Detail | `/dashboard/orders/:id` | _pending_ |
-| Users List | `/dashboard/users` | _pending_ |
-| Carts View | `/dashboard/carts` | _pending_ |
-
-### Components
-
-| Component | Figma link |
-|---|---|
-| Sidebar | _pending_ |
-| Topbar | _pending_ |
-| Button | _pending_ |
-| Input | _pending_ |
-| Modal | _pending_ |
-| ConfirmDialog | _pending_ |
-| Spinner | _pending_ |
-| EmptyState | _pending_ |
-| Pagination | _pending_ |
-| ProductTable | _pending_ |
-| ProductForm | _pending_ |
-| ImageUploader | _pending_ |
-| OrdersTable | _pending_ |
-| OrderStatusBadge | _pending_ |
-| OrderDetailModal | _pending_ |
-| UsersTable | _pending_ |
-| AddAdminForm | _pending_ |
-| RevenueLineChart | _pending_ |
-| TopProductsTable | _pending_ |
-
-> Before starting any page or component, check its Figma link is filled in first — don't build from memory and end up drifting from the design.
+> Dark mode is opt-in via `<html data-theme="dark">` and does not follow OS `prefers-color-scheme`. See `theme.css` for the dark token overrides — the semantic names stay the same, only the values swap.
 
 ---
 
