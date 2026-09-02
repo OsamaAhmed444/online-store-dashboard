@@ -1,15 +1,38 @@
-import React from 'react'
+import React, { useId } from 'react'
 
-export default function Input({ type, name, id, className, label, value, placeholder, onChange, error, ...props }) {
-  const bestStyles = "px-6 py-2 ring-1 rounded-lg focus:ring-slate-400 disabled:cursor-not-allowed transition-all duration-300";
+export default function Input({
+  label,
+  error,
+  helperText,
+  id,
+  className = '',
+  ...props
+}) {
+  const generatedId = useId()
+  const inputId = id || generatedId
+  const descriptionId = error || helperText ? `${inputId}-description` : undefined
 
   return (
-    <div className="flex flex-col justify-center items-center gap-5">
+    <div className="flex flex-col gap-1.5">
+      {label && (
+        <label htmlFor={inputId} className="label">
+          {label}
+        </label>
+      )}
 
-      <label htmlFor={id ? id : name}>{label}</label>
-      <input type={type} name={name} id={id ? id : name} className={`${bestStyles} ${className ? className : ""} ${error ? "ring-red-600" : "ring-slate-700"}`} value={value} placeholder={placeholder} onChange={onChange} {...props} />
-      <div className={`px-4 py-2 rounded-lg bg-white flex justify-center gap-2 ${error ? "flex" : "hidden"}`}>{error}</div>
+      <input
+        id={inputId}
+        className={['input', error ? 'input-error' : '', className].filter(Boolean).join(' ')}
+        aria-invalid={!!error}
+        aria-describedby={descriptionId}
+        {...props}
+      />
 
+      {(error || helperText) && (
+        <p id={descriptionId} className={error ? 'error-text' : 'helper-text'}>
+          {error || helperText}
+        </p>
+      )}
     </div>
   )
 }

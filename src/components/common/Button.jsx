@@ -1,9 +1,44 @@
 import React from 'react'
 
-function Button({ type, onClick, className, disabled, loading, children, ...props }) {
-  const bestStyles = "px-4 py-2 text-white rounded-lg bg-slate-700 hover:bg-slate-800 focus:ring-1 focus:ring-slate-400 disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-300"
+import Spinner from './Spinner'
+
+const VARIANT_CLASSES = {
+  primary: 'btn-primary',
+  secondary: 'btn-secondary',
+  danger: 'btn-danger',
+  outline: 'btn-outline',
+  ghost: 'btn-ghost',
+  link: 'btn-link',
+}
+
+const SIZE_CLASSES = {
+  sm: 'btn-sm',
+  md: 'btn-md',
+  lg: 'btn-lg',
+}
+
+export default function Button({
+  variant = 'primary',
+  size = 'md',
+  loading = false,
+  disabled = false,
+  className = '',
+  children,
+  type = 'button',
+  ...props
+}) {
   return (
-    <button type={type ? type : "button"} onClick={onClick} className={`${bestStyles} ${className ? className : ""}  `} disabled={disabled || loading} {...props}>{loading ? "Loading..." : children}</button>
+    <button
+      type={type}
+      disabled={disabled || loading}
+      className={['btn', VARIANT_CLASSES[variant], SIZE_CLASSES[size], className]
+        .filter(Boolean)
+        .join(' ')}
+      {...props}
+    >
+      {loading && <Spinner size="sm" />}
+      {children}
+    </button>
   )
 }
 

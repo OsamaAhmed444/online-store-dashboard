@@ -1,0 +1,390 @@
+1. API DOCUMENTATION
+
+API URL:
+https://e-commerce-api-3wara.vercel.app
+
+Login:
+POST /auth/login
+
+Login Body:
+{
+"email": "[admin@koda.com](mailto:admin@koda.com)",
+"password": "ADMIN_PASSWORD"
+}
+
+Login Response:
+
+* success
+* token
+* user
+
+User Data:
+
+* id (_id)
+* username
+* email
+* role
+* avatar
+
+Admin Role:
+user.role === "admin"
+
+Authentication:
+
+* Token returned in response
+* Token also stored as HttpOnly Secure cookie
+
+Protected:
+
+* GET /auth/me
+* GET /auth/admin-test
+* PATCH /auth/change-role
+* Admin user endpoints
+
+STATUS:
+API Documentation → MOSTLY DONE
+Remaining: confirm /auth/me, Authorization format, and 401 response.
+
+
+2. ENVIRONMENT
+
+.env:
+VITE_API_URL=https://e-commerce-api-3wara.vercel.app
+
+.env.example:
+VITE_API_URL=https://e-commerce-api-3wara.vercel.app
+
+.gitignore:
+.env
+.env.local
+.env.*.local
+
+STATUS:
+Environment Configuration → DONE
+
+Security:
+
+* No passwords committed
+* No tokens committed
+* API URL is accessed with import.meta.env.VITE_API_URL
+* No hard-coded API URL
+
+
+auth.js
+login(data)
+    → POST /auth/login
+
+logout()
+    → POST /auth/logout
+
+getMe()
+    → GET /auth/me
+users.js
+getUsers()
+    → GET /users/all
+
+addUser(data)
+    → POST /users/add
+
+getUserById(id)
+    → GET /users/{id}
+
+updateUser(id, data)
+    → PATCH /users/{id}
+
+deleteUser(id)
+    → DELETE /users/{id}
+products.js
+getProducts()
+    → GET /products
+
+addProduct(data)
+    → POST /products
+
+searchProducts(query)
+    → GET /products/search
+
+getProductById(id)
+    → GET /products/{id}
+
+updateProduct(id, data)
+    → PATCH /products/update/{id}
+
+deleteProduct(id)
+    → DELETE /products/{id}
+orders.js
+getOrders()
+    → GET /orders/admin/dashboard
+
+getCarts()
+    → GET /orders/admin/carts
+
+getOrdersAdmin()
+    → GET /orders/admin
+
+getOrder(id)
+    → GET /orders/admin/{id}
+
+orderStatus(id, status)
+    → PATCH /orders/admin/{id}/status
+wishlist.js
+getWishlists()
+    → GET /wishlists/admin/all
+
+getWishlistsStats()
+    → GET /wishlists/admin/stats
+Complete frontend API list
+AUTH
+login(data)
+logout()
+getMe()
+
+USERS
+getUsers()
+addUser(data)
+getUserById(id)
+updateUser(id, data)
+deleteUser(id)
+
+PRODUCTS
+getProducts()
+addProduct(data)
+searchProducts(query)
+getProductById(id)
+updateProduct(id, data)
+deleteProduct(id)
+
+ORDERS
+getOrders()
+getCarts()
+getOrdersAdmin()
+getOrder(id)
+orderStatus(id, status)
+
+WISHLISTS
+getWishlists()
+getWishlistsStats()
+How the team uses them
+
+For example, a Users page can simply do:
+
+import { getUsers } from "../api/users"
+
+Then call:
+
+getUsers()
+
+The page doesn't need to know the URL, Axios configuration, cookies, or authentication details.
+
+That's the whole point of this API layer:
+
+Frontend Page
+     ↓
+API Function
+     ↓
+Shared axios.js
+     ↓
+Backend API
+
+Yes. For Section 4 — AuthContext.jsx, these are the outputs/results you should record:
+
+Section 4 — AuthContext Outputs
+AuthContext
+├── user                 ✅
+├── token                ✅
+├── isAuthenticated      ✅
+├── loading              ✅
+├── login()              ✅
+├── logout()             ✅
+└── session restore      ✅
+API Connection
+POST /auth/login        ✅
+POST /auth/logout       ✅
+GET  /auth/me           ✅
+Login
+Email + Password
+      ↓
+/auth/login
+      ↓
+Token + User
+      ↓
+AuthContext
+      ↓
+Authenticated
+Session Restore
+Page Refresh
+     ↓
+/auth/me
+     ↓
+User restored
+     ↓
+isAuthenticated = true
+Logout
+logout()
+   ↓
+/auth/logout
+   ↓
+User cleared
+Token cleared
+isAuthenticated = false
+Security
+Admin password in source code     ❌
+Admin password in .env.example    ❌
+Token in localStorage             ❌
+Authentication cookie              ✅ HttpOnly
+
+
+3. src/api/axios.js — Outputs
+Shared Axios Client
+├── Uses VITE_API_URL                 ✅
+├── Single Axios instance             ✅
+├── withCredentials: true             ✅
+├── Sends authentication cookies      ✅
+├── Reusable across all API files     ✅
+└── No duplicate Axios clients        ✅
+Request Flow
+Frontend Page
+      ↓
+API Function
+      ↓
+axios.js
+      ↓
+withCredentials: true
+      ↓
+Authentication Cookie
+      ↓
+Backend API
+Authentication
+Login
+ ↓
+Backend sets HttpOnly cookie
+ ↓
+Browser stores cookie
+ ↓
+Axios sends cookie automatically
+ ↓
+Protected API works
+
+STATUS: Axios Client → DONE ✅
+
+5. src/routes/ProtectedRoute.jsx — Outputs
+ProtectedRoute
+├── Checks authentication           ⏳
+├── Checks authenticated user       ⏳
+├── Checks user.role === "admin"    ⏳
+├── Blocks unauthenticated users    ⏳
+├── Blocks non-admin users          ⏳
+└── Allows admin users              ⏳
+Expected Flow
+/dashboard
+      ↓
+ProtectedRoute
+      ↓
+Authenticated?
+   ↙       ↘
+ NO         YES
+ ↓           ↓
+/login    role === "admin"?
+             ↙      ↘
+           NO        YES
+           ↓          ↓
+        Block       Dashboard
+
+STATUS: ProtectedRoute → NOT DONE YET ⏳
+
+6. Dashboard Routing — Outputs
+Routing
+├── /login                  ⏳
+├── /dashboard              ⏳
+├── /dashboard protected   ⏳
+└── ProtectedRoute wrapper ⏳
+Expected Result
+User
+ ↓
+/dashboard
+ ↓
+ProtectedRoute
+ ↓
+Admin authenticated?
+ ↓
+Dashboard
+
+STATUS: Dashboard Protection → NOT DONE YET ⏳
+
+7. Logout — Outputs
+
+We tested the backend side:
+
+POST /auth/logout
+        ↓
+200 OK                    ✅
+        ↓
+Set-Cookie token=         ✅
+        ↓
+Expires in the past       ✅
+
+But the frontend/browser session is still remaining, so:
+
+logout()
+   ↓
+/auth/logout              ✅
+   ↓
+Cookie cleared by API     ⚠️
+   ↓
+Frontend user cleared     ⏳
+   ↓
+isAuthenticated = false   ⏳
+   ↓
+/dashboard blocked       ⏳
+
+STATUS: Logout → NEEDS FIXING ⚠️
+
+8. API Testing — Outputs
+
+We've already confirmed the protected API layer works with the cookie:
+
+AUTH
+├── Login                    ✅
+├── Get Me                   ✅
+└── Logout endpoint          ✅
+
+USERS
+├── Get Users                ✅
+└── Get User                 ✅
+
+PRODUCTS
+├── Get Products             ✅
+├── Search Products          ✅
+├── Get Product              ✅
+├── Add Product              ✅
+├── Update Product           ✅
+└── Delete Product           ✅
+
+ORDERS
+├── Dashboard Stats          ✅
+├── Get Carts                ✅
+├── Get Orders               ✅
+├── Get Order                ✅
+└── Update Order Status      ✅
+
+WISHLISTS
+├── Get Wishlists            ✅
+└── Wishlist Stats           ✅
+
+STATUS: API Layer → DONE ✅
+
+Final Task Status
+1. API Documentation       ✅ DONE
+2. Environment             ✅ DONE
+3. Axios Client            ✅ DONE
+4. AuthContext             🟡 MOSTLY DONE
+5. ProtectedRoute           ⏳ TODO
+6. Dashboard Routing        ⏳ TODO
+7. Logout                   ⚠️ NEEDS FIX
+8. API Functions            ✅ DONE
+9. API Testing              ✅ DONE
+10. Security                ✅ DONE
+
+So the only real work left for this Phase 0 task is:
+
+Logout fix → ProtectedRoute → Dashboard route protection → final test.
