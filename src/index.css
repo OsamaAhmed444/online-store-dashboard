@@ -1,100 +1,260 @@
 @import "tailwindcss";
-:root {
-  /* Brand */
-  --primary: #f97316;
-  --primary-hover: #ea580c;
-  --primary-active: #c2410c;
 
-  /* Text */
-  --text: #1f2937;
-  --muted: #6b7280;
-
-  /* Background */
-  --bg: #ffffff;
-  --surface: #ffffff;
-
-  /* Semantic */
-  --success: #16a34a;
-  --error: #dc2626;
-  --warning: #d97706;
-  --info: #2563eb;
-
-  /* Borders */
-  --border: #e5e7eb;
-  --border-strong: #d1d5db;
-
-  /* Inputs */
-  --input: #d1d5db;
-  --input-focus: #f97316;
-  --input-error: #dc2626;
-  --input-disabled: #f3f4f6;
-  --placeholder: #9ca3af;
-
-  /* Radius */
-  --radius-sm: 0.25rem;
-  --radius-md: 0.5rem;
-  --radius-lg: 0.75rem;
-}
-
-.dark {
-  /* Brand */
-  --primary: #fb923c;
-  --primary-hover: #f97316;
-  --primary-active: #ea580c;
-
-  /* Text */
-  --text: #f9fafb;
-  --muted: #9ca3af;
-
-  /* Background */
-  --bg: #0f1115;
-  --surface: #15181d;
-
-  /* Semantic */
-  --success: #22c55e;
-  --error: #ef4444;
-  --warning: #f59e0b;
-  --info: #60a5fa;
-
-  /* Borders */
-  --border: #2a2f38;
-  --border-strong: #3f4652;
-
-  /* Inputs */
-  --input: #3f4652;
-  --input-focus: #fb923c;
-  --input-error: #ef4444;
-  --input-disabled: #242830;
-  --placeholder: #6b7280;
-}
-
-
+/*
+  Warm Orange theme.
+  Raw palette comes straight from the design reference:
+  #FFF7ED, #FFEDD5, #FB923C, #F97316, #9CA3AF, #1F2937.
+  Semantic tokens below are what components should actually use
+  (bg-background, text-foreground, bg-primary, etc.) so the whole
+  app reads from one source of truth and dark mode is a single
+  variable swap instead of per-component overrides.
+*/
 @theme {
-  --color-primary: var(--primary);
-  --color-primary-hover: var(--primary-hover);
-  --color-primary-active: var(--primary-active);
+  /* raw palette */
+  --color-warm-50: #fff7ed;
+  --color-warm-100: #ffedd5;
+  --color-warm-400: #fb923c;
+  --color-warm-500: #f97316;
+  --color-warm-600: #ea580c;
+  --color-slate-400: #9ca3af;
+  --color-slate-800: #1f2937;
 
-  --color-text: var(--text);
-  --color-muted: var(--muted);
+  /* semantic tokens - light (default) */
+  --color-background: var(--color-warm-50);
+  --color-foreground: var(--color-slate-800);
 
-  --color-bg: var(--bg);
-  --color-surface: var(--surface);
+  --color-card: #ffffff;
+  --color-card-foreground: var(--color-slate-800);
 
-  --color-success: var(--success);
-  --color-error: var(--error);
-  --color-warning: var(--warning);
-  --color-info: var(--info);
+  --color-sidebar: #ffffff;
+  --color-sidebar-foreground: var(--color-slate-800);
 
-  --color-border: var(--border);
-  --color-border-strong: var(--border-strong);
+  --color-muted: var(--color-warm-100);
+  --color-muted-foreground: var(--color-slate-400);
 
-  --color-input: var(--input);
-  --color-input-focus: var(--input-focus);
-  --color-input-error: var(--input-error);
-  --color-input-disabled: var(--input-disabled);
-  --color-placeholder: var(--placeholder);
+  --color-border: var(--color-warm-100);
+  --color-input: var(--color-warm-100);
+  --color-ring: var(--color-warm-500);
 
-  --radius-sm: var(--radius-sm);
-  --radius-md: var(--radius-md);
-  --radius-lg: var(--radius-lg);
+  --color-primary: var(--color-warm-500);
+  --color-primary-hover: var(--color-warm-600);
+  --color-primary-foreground: #ffffff;
+
+  --color-accent: var(--color-warm-400);
+  --color-accent-foreground: #ffffff;
+
+  --color-success: #16a34a;
+  --color-warning: #f59e0b;
+  --color-danger: #dc2626;
+}
+
+/* Dark mode is opt-in only, via a theme toggle setting
+   <html data-theme="dark">. Light (the tokens in @theme above) is
+   always the default - it does NOT follow OS prefers-color-scheme. */
+[data-theme="dark"] {
+  --color-background: #0a0a0a;
+  --color-foreground: #f9fafb;
+
+  --color-card: #131316;
+  --color-card-foreground: #f9fafb;
+
+  --color-sidebar: #0a0a0a;
+  --color-sidebar-foreground: #f9fafb;
+
+  --color-muted: #1f2023;
+  --color-muted-foreground: var(--color-slate-400);
+
+  --color-border: #27272a;
+  --color-input: #27272a;
+  --color-ring: var(--color-warm-500);
+
+  --color-primary: var(--color-warm-500);
+  --color-primary-hover: var(--color-warm-400);
+  --color-primary-foreground: #0a0a0a;
+
+  --color-accent: var(--color-warm-400);
+  --color-accent-foreground: #0a0a0a;
+
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+}
+
+/* Apply the tokens site-wide so they override Tailwind Preflight /
+   browser defaults everywhere, not just inside styled components. */
+@layer base {
+  html {
+    color-scheme: light;
+  }
+
+  html[data-theme="dark"] {
+    color-scheme: dark;
+  }
+
+  *,
+  *::before,
+  *::after {
+    border-color: var(--color-border);
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    background-color: var(--color-background) !important;
+    color: var(--color-foreground) !important;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  a {
+    color: inherit;
+  }
+}
+
+/*
+  Default element styles.
+  Every class below is built only from the semantic tokens defined in
+  @theme / [data-theme="dark"] above (bg-primary, text-foreground,
+  border-border, ...). Nothing here hardcodes a color, so switching
+  data-theme on <html> re-themes every element automatically - no
+  per-component dark: variants needed.
+*/
+@layer components {
+  /* ---------- Buttons ---------- */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg font-medium
+           transition-colors duration-150 cursor-pointer select-none whitespace-nowrap
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
+           focus-visible:ring-offset-2 focus-visible:ring-offset-background
+           disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .btn-sm {
+    @apply h-8 px-3 text-sm;
+  }
+  .btn-md {
+    @apply h-10 px-4 text-sm;
+  }
+  .btn-lg {
+    @apply h-12 px-6 text-base;
+  }
+
+  .btn-primary {
+    @apply bg-primary text-primary-foreground hover:bg-primary-hover;
+  }
+
+  .btn-secondary {
+    @apply bg-muted text-foreground border border-border hover:bg-border;
+  }
+
+  .btn-danger {
+    @apply bg-danger text-white hover:opacity-90;
+  }
+
+  .btn-outline {
+    @apply bg-transparent text-foreground border border-border hover:bg-muted;
+  }
+
+  .btn-ghost {
+    @apply bg-transparent text-foreground hover:bg-muted;
+  }
+
+  .btn-link {
+    @apply h-auto bg-transparent p-0 text-primary underline-offset-4 hover:underline;
+  }
+
+  /* ---------- Form elements ---------- */
+  .label {
+    @apply text-sm font-medium text-foreground;
+  }
+
+  .input,
+  .textarea,
+  .select {
+    @apply w-full rounded-lg border border-input bg-card text-foreground
+           placeholder:text-muted-foreground px-3 py-2 text-sm transition-colors
+           focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring
+           disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-muted;
+  }
+
+  .textarea {
+    @apply min-h-24 resize-y;
+  }
+
+  .input-error,
+  .textarea-error,
+  .select-error {
+    @apply border-danger focus:ring-danger;
+  }
+
+  .helper-text {
+    @apply text-xs text-muted-foreground;
+  }
+
+  .error-text {
+    @apply text-xs text-danger;
+  }
+
+  .checkbox,
+  .radio {
+    @apply h-4 w-4 cursor-pointer border border-input accent-primary
+           focus:outline-none focus:ring-2 focus:ring-ring
+           disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .radio {
+    @apply rounded-full;
+  }
+  .checkbox {
+    @apply rounded;
+  }
+
+  /* ---------- Surfaces ---------- */
+  .card {
+    @apply rounded-xl border border-border bg-card text-card-foreground shadow-sm;
+  }
+
+  /* ---------- Badges ---------- */
+  .badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+  .badge-default {
+    @apply bg-muted text-muted-foreground;
+  }
+  .badge-primary {
+    @apply bg-primary/10 text-primary;
+  }
+  .badge-success {
+    @apply bg-success/10 text-success;
+  }
+  .badge-warning {
+    @apply bg-warning/10 text-warning;
+  }
+  .badge-danger {
+    @apply bg-danger/10 text-danger;
+  }
+
+  /* ---------- Alerts ---------- */
+  .alert {
+    @apply flex items-start gap-3 rounded-lg border p-4 text-sm;
+  }
+  .alert-info {
+    @apply border-primary/20 bg-primary/5 text-foreground;
+  }
+  .alert-success {
+    @apply border-success/30 bg-success/10 text-success;
+  }
+  .alert-warning {
+    @apply border-warning/30 bg-warning/10 text-warning;
+  }
+  .alert-danger {
+    @apply border-danger/30 bg-danger/10 text-danger;
+  }
+
+  /* ---------- Misc ---------- */
+  .spinner {
+    @apply inline-block animate-spin rounded-full border-2 border-current border-t-transparent;
+  }
 }

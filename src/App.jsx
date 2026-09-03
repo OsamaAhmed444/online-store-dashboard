@@ -6,6 +6,7 @@ import DashboardLayout from './components/layout/DashboardLayout'
 import Button from "./components/common/Button";
 import Input from "./components/common/Input";
 import LoginPage from './pages/LoginPage'
+import StyleGuidePage from './pages/StyleGuidePage'
 import DashboardHome from './pages/DashboardHome'
 import ProductsListPage from './pages/ProductsListPage'
 import AddProductPage from './pages/AddProductPage'
@@ -20,6 +21,7 @@ export default function App() {
     <>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/style-guide" element={<StyleGuidePage />} />
 
         <Route
           path="/dashboard"
