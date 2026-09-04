@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'react-toastify'
+import { ArrowRight, BarChart3, Box, Eye, EyeOff, ShieldCheck, Users } from 'lucide-react'
 
 import Input from '../components/common/Input'
 import Button from '../components/common/Button'
@@ -19,6 +20,7 @@ export default function LoginPage() {
   const [errors, setErrors] = useState({})
   const [submitError, setSubmitError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   const validateField = (name, value) => {
     switch (name) {
@@ -89,48 +91,51 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#fff7ed] px-4 py-10">
-      <div className="w-full max-w-md rounded-[28px] border border-[#ffedd5] bg-white p-7 shadow-[0_24px_60px_rgba(249,115,22,0.12)] md:p-8">
-        <div className="mb-7 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#fff7ed] ring-1 ring-[#fed7aa]">
-            <div className="relative h-8 w-8">
-              <span className="absolute left-0 top-0 h-3 w-3 rotate-45 rounded-sm bg-[#f59e0b]" />
-              <span className="absolute right-0 top-0 h-3 w-3 rotate-45 rounded-sm bg-[#fb923c]" />
-              <span className="absolute bottom-0 left-1/2 h-3 w-3 -translate-x-1/2 rotate-45 rounded-sm bg-[#f97316]" />
-            </div>
-          </div>
-          <h2 className="text-3xl font-black tracking-[-0.05em] text-[#1f2937]">Welcome Back</h2>
-          <p className="mt-2 text-sm text-[#6b7280]">Sign in to your admin dashboard</p>
-        </div>
+    <div className="login-page">
+      <div className="login-shell">
+        <section className="login-promo">
+          <img className="login-promo-image" src="/login_image.jpeg" alt="Nexora store display" />
+          <div className="login-brand"><span className="login-brand-mark">N</span><span><strong>Nexora</strong><small>STORE MANAGEMENT</small></span></div>
+          <div className="login-promo-copy"><p className="login-eyebrow"><span /> SELL SMARTER</p><h1>Manage Your Store<br />Like a <em>Pro</em></h1><p>Control products, orders, users, carts and analytics from a modern dashboard experience.</p></div>
+          <div className="login-features"><div><span><Box /></span><p><strong>Product Management</strong><small>Add, edit and organize your products.</small></p></div><div><span><BarChart3 /></span><p><strong>Order Tracking</strong><small>Monitor orders in real-time.</small></p></div><div><span><Users /></span><p><strong>Customer Insights</strong><small>Understand your customers better.</small></p></div></div>
+          <div className="login-promo-foot"><strong>Build Bigger</strong><span>ONE ORDER AT A TIME</span></div>
+        </section>
+        <section className="login-form-panel">
+          <div className="login-access-label">ADMIN ACCESS <span /></div>
+          <div className="login-form-header"><h2>Welcome <em>Back</em></h2><p>Sign in to your admin dashboard</p></div>
 
         <form onSubmit={handleSubmit} className="space-y-5" noValidate>
           <div>
-            <label className="mb-2 block text-sm font-semibold text-[#374151]">Email Address</label>
+            <label className="login-label">Email Address</label>
             <Input
               name="email"
               type="email"
               value={formData.email}
               onChange={handleChange}
               error={errors.email}
-              placeholder="admin@koda.com"
+              placeholder="admin@nexora.com"
               autoComplete="email"
-              className="h-12 rounded-xl border border-[#fed7aa] bg-[#fffaf5] px-4 text-base text-[#1f2937] placeholder:text-[#9ca3af] focus:border-[#f97316] focus:ring-2 focus:ring-[#f97316]/20"
+              className="login-input"
             />
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-semibold text-[#374151]">Password</label>
+            <label className="login-label">Password</label>
+            <div className="login-password-wrap">
             <Input
               name="password"
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               value={formData.password}
               onChange={handleChange}
               error={errors.password}
-              placeholder="••••••••"
+              placeholder="Enter your password"
               autoComplete="current-password"
-              className="h-12 rounded-xl border border-[#fed7aa] bg-[#fffaf5] px-4 text-base text-[#1f2937] placeholder:text-[#9ca3af] focus:border-[#f97316] focus:ring-2 focus:ring-[#f97316]/20"
+              className="login-input"
             />
+            <button type="button" className="login-password-toggle" onClick={() => setShowPassword((visible) => !visible)} aria-label={showPassword ? 'Hide password' : 'Show password'}>{showPassword ? <EyeOff /> : <Eye />}</button></div>
           </div>
+
+          <div className="login-options"><label><input type="checkbox" /> <span>Remember me</span></label><button type="button">Forgot password?</button></div>
 
           {submitError && (
             <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
@@ -142,15 +147,14 @@ export default function LoginPage() {
             type="submit"
             loading={isSubmitting}
             disabled={isSubmitting}
-            className="mt-2 h-12 w-full rounded-xl bg-[#f97316] text-base font-bold text-white shadow-[0_10px_20px_rgba(249,115,22,0.2)] hover:bg-[#ea580c]"
+            className="login-submit"
           >
-            Sign In
+            Sign In <ArrowRight />
           </Button>
         </form>
 
-        <div className="mt-6 text-center text-xs font-medium uppercase tracking-[0.2em] text-[#9ca3af]">
-          Secure Admin Access
-        </div>
+        <div className="login-divider"><span>OR</span></div><button type="button" className="login-google"><strong>G</strong> Continue with Google <ArrowRight /></button><div className="login-secure"><ShieldCheck /> Secure Admin Access</div>
+        </section>
       </div>
     </div>
   )

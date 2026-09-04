@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
-import { Spinner } from '../components/common/Spinner'
-import { EmptyState } from '../components/common/EmptyState'
-import { Pagination } from '../components/common/Pagination'
+import Spinner from '../components/common/Spinner'
+import EmptyState from '../components/common/EmptyState'
+import Pagination from '../components/common/Pagination'
 import { OrdersTable } from '../components/orders/OrdersTable'
 import { useAuth } from '../context/AuthContext'
 import axios from 'axios'
@@ -44,8 +44,16 @@ export function OrdersListPage() {
           Authorization: `Bearer ${user?.token}`
         }
       })
-      setOrders(response.data.orders)
-      setTotalPages(response.data.totalPages)
+
+      const payload = response.data || {}
+      const nextOrders = Array.isArray(payload.orders)
+        ? payload.orders
+        : Array.isArray(payload.data)
+          ? payload.data
+          : []
+
+      setOrders(nextOrders)
+      setTotalPages(Number(payload.totalPages || payload.total_pages || 1))
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to fetch orders')
       setOrders([])
@@ -114,3 +122,5 @@ export function OrdersListPage() {
     </>
   )
 }
+
+export default OrdersListPage

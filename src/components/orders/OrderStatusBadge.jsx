@@ -7,7 +7,7 @@ const statusColors = {
   delivered: 'success'
 }
 
-export function OrderStatusBadge({ status }) {
+export default function OrderStatusBadge({ status }) {
   const colorClass = statusColors[status] || 'info'
 
   return (
