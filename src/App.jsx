@@ -9,6 +9,8 @@ import LoginPage from './pages/LoginPage'
 import DashboardHome from './pages/DashboardHome'
 import ProductsListPage from './pages/ProductsListPage'
 import AddProductPage from './pages/AddProductPage'
+import ViewProductPage from './pages/ViewProductPage'
+import QuickEditProductPage from './pages/QuickEditProductPage'
 import EditProductPage from './pages/EditProductPage'
 import OrdersListPage from './pages/OrdersListPage'
 import OrderDetailPage from './pages/OrderDetailPage'
@@ -31,8 +33,10 @@ export default function App() {
         >
           <Route index element={<DashboardHome />} />
           <Route path="products" element={<ProductsListPage />} />
-          <Route path="products/new" element={<AddProductPage />} />
+          <Route path="products/add" element={<AddProductPage />} />
+          <Route path="products/:id/view" element={<ViewProductPage />} />
           <Route path="products/:id/edit" element={<EditProductPage />} />
+          <Route path="products/:id/Quickedit" element={<QuickEditProductPage />} />
           <Route path="orders" element={<OrdersListPage />} />
           <Route path="orders/:id" element={<OrderDetailPage />} />
           <Route path="users" element={<UsersListPage />} />
