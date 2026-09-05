@@ -2,10 +2,7 @@ import api from "./axios";
 
 export const getProducts = (filters = {}) => {
   return api.get("/products", {
-    params: {
-      ...filters,
-      category: "team-1-products",
-    },
+    params: filters,
   });
 };
 
