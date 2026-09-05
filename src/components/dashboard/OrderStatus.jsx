@@ -1,0 +1,3 @@
+import React from 'react'
+const statuses = [['Pending', 'pending'], ['Processing', 'processing'], ['Confirmed', 'confirmed'], ['Shipped', 'shipped'], ['Delivered', 'delivered'], ['Cancelled', 'cancelled']]
+export default function OrderStatus({ orders }) { return <section className="surface-panel status-panel"><div className="section-heading"><div><p className="eyebrow">ORDER STATUS</p><h2>Live fulfillment breakdown</h2></div><span className="updated-label"><i /> Updated from API</span></div><div className="status-grid">{statuses.map(([name, tone]) => <div className={`status-card ${tone}`} key={name}><span>{name}</span><strong>{orders.filter((order) => order.status === tone).length}</strong></div>)}</div></section> }

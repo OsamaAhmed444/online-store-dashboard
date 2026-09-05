@@ -1,0 +1,5 @@
+import React from 'react'
+import StatusBadge from './StatusBadge'
+const formatCurrency = (value) => `$${Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+const formatDate = (value) => value ? new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'
+export default function RecentOrders({ orders }) { return <section className="surface-panel recent-panel"><div className="section-heading"><div><p className="eyebrow">RECENT ORDERS</p><h2>Latest customer activity</h2></div><button className="view-all" type="button">View All</button></div><div className="orders-list">{orders.slice().sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5).map((order) => <div className="order-row" key={order.id}><div className="order-customer"><strong>{order.customer}</strong><span>#{order.id} <b>·</b> {formatDate(order.date)}</span></div><StatusBadge status={order.status} /><strong className="order-total">{formatCurrency(order.total)}</strong></div>)}</div></section> }

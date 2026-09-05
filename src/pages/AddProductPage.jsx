@@ -1,404 +1,103 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { addProduct } from "../api/product";
-import Button from "../components/common/Button";
-import Input from "../components/common/Input";
-import { ImagePlus, Upload, Sparkles } from "lucide-react";
-import ImageUploader from "../components/products/ImageUploader";
+import React, { useEffect, useRef, useState } from 'react'
+import { ArrowLeft, ImagePlus, Package, Save, Sparkles } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { toast } from 'react-toastify'
+import { addProduct } from '../api/products'
+import Button from '../components/common/Button'
+import ImageUploader from '../components/products/ImageUploader'
+
+const initialForm = { name: '', shortDescription: '', description: '', price: '', discountPrice: '', stock: '', sku: '', category: '', subcategory: '', brand: '', featured: false, active: true }
+
+function validate(form) {
+  const errors = {}
+  if (!form.name.trim()) errors.name = 'Product name is required.'
+  if (form.shortDescription.trim().length < 10) errors.shortDescription = 'Use at least 10 characters.'
+  if (form.description.trim().length < 20) errors.description = 'Use at least 20 characters.'
+  if (form.price === '' || Number(form.price) <= 0) errors.price = 'Price must be greater than zero.'
+  if (form.stock === '' || Number(form.stock) < 0) errors.stock = 'Stock cannot be negative.'
+  if (!form.category.trim()) errors.category = 'Category is required.'
+  return errors
+}
 
 export default function AddProductPage() {
-  const navigate = useNavigate();
-  const [images, setImages] = useState([]);
-  const [previewImages, setPreviewImages] = useState([]);
+  const navigate = useNavigate()
+  const [form, setForm] = useState(initialForm)
+  const [tags, setTags] = useState([])
+  const [tagDraft, setTagDraft] = useState('')
+  const [images, setImages] = useState([])
+  const [previews, setPreviews] = useState([])
+  const [errors, setErrors] = useState({})
+  const [apiError, setApiError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [dirty, setDirty] = useState(false)
+  const previewsRef = useRef(previews)
 
-  const [formData, setFormData] = useState({
-    name: "",
-    shortDescription: "",
-    description: "",
-    price: "",
-    discountPrice: "",
-    stock: "",
-    sku: "",
-    category: "",
-    subcategory: "",
-    brand: "",
-    featured: false,
-  
-  });
+  previewsRef.current = previews
+  useEffect(() => () => previewsRef.current.forEach((preview) => URL.revokeObjectURL(preview.url)), [])
 
-  // Handle inputs
-  // const handleChange = (e) => {
-  //   const { name, value, type, checked } = e.target;
+  const updateField = (event) => {
+    const { name, value, type, checked } = event.target
+    setForm((previous) => ({ ...previous, [name]: type === 'checkbox' ? checked : value }))
+    setDirty(true)
+    if (errors[name]) setErrors((previous) => ({ ...previous, [name]: '' }))
+  }
 
-  //   setFormData({
-  //     ...formData,
-  //     [name]: type === "checkbox" ? checked : value,
-  //   });
-  // };
-
-  // Submit form
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    try {
-      const data = new FormData();
-
-      data.append("name", formData.name);
-      data.append("shortDescription", formData.shortDescription);
-      data.append("description", formData.description);
-      data.append("price", formData.price);
-      data.append("discountPrice", formData.discountPrice);
-      data.append("stock", formData.stock);
-      data.append("sku", formData.sku);
-      data.append("category", formData.category);
-      data.append("subcategory", formData.subcategory);
-      data.append("brand", formData.brand);
-      data.append("featured", formData.featured);
-    
-      
-
-      images.forEach((image) => {
-        data.append("images", image);
-      });
-
-      //     console.log("NUMBER OF IMAGES:", images.length);
-
-      // images.forEach((image) => {
-      //   console.log("IMAGE:", image.name, image.type, image.size);
-      // });
-
-      const response = await addProduct(data);
-
-      console.log("Product added:", response.data);
-
-      navigate(-1);
-    } catch (error) {
-      console.log("STATUS:", error.response?.status);
-      console.log("BACKEND ERROR:", error.response?.data);
+  const handleImages = (files) => {
+    const accepted = []
+    const rejected = []
+    files.forEach((file) => {
+      if (!file.type.startsWith('image/')) rejected.push(`${file.name}: only image files are allowed.`)
+      else if (images.some((existing) => existing.name === file.name && existing.size === file.size)) rejected.push(`${file.name}: already selected.`)
+      else accepted.push(file)
+    })
+    if (accepted.length) {
+      setImages((current) => [...current, ...accepted])
+      setPreviews((current) => [...current, ...accepted.map((file) => ({ file, url: URL.createObjectURL(file) }))])
+      setDirty(true)
     }
-  };
+    if (rejected.length) setErrors((current) => ({ ...current, images: rejected.join(' ') }))
+  }
 
-  // Cancel
-  const handleCancel = () => {
-    navigate(-1);
-  };
+  const removeImage = (index) => {
+    setPreviews((current) => { const removed = current[index]; if (removed) URL.revokeObjectURL(removed.url); return current.filter((_, itemIndex) => itemIndex !== index) })
+    setImages((current) => current.filter((_, itemIndex) => itemIndex !== index))
+    setDirty(true)
+  }
 
-  return (
-    <div className="m-10 flex flex-col gap-8">
-      {/* ================= HEADER ================= */}
-      <div className="border rounded-lg p-4 flex items-end justify-between border-[var(--input)]  outline-none ">
-        <div className="flex flex-col gap-4">
-          {/* Back Button */}
-          <div>
-            <Button
-              type="button"
-              className=" cursor-pointer text-white rounded-lg py-1 px-2 outline-none"
-              onClick={() => navigate(-1)}
-            >
-              Back to products
-            </Button>
-          </div>
+  const addTag = () => {
+    const tag = tagDraft.trim()
+    if (!tag || tags.includes(tag)) return
+    setTags((current) => [...current, tag])
+    setTagDraft('')
+    setDirty(true)
+  }
 
-          {/* Title */}
-          <div className="flex gap-4 items-center ">
-            <div className="bg-cyan-100 text-cyan-500 p-3 rounded-2xl">
-              <ImagePlus size={25} />
-            </div>
+  const handleBack = () => { if (dirty && !window.confirm('Discard this product draft?')) return; navigate('/dashboard/products') }
 
-            <div className="flex flex-col gap-2">
-              <p className="tracking-widest">Create Product</p>
+  const handleSubmit = async (event) => {
+    event.preventDefault()
+    const nextErrors = validate(form)
+    setErrors(nextErrors)
+    setApiError('')
+    if (Object.keys(nextErrors).length) return
+    setSubmitting(true)
+    try {
+      const payload = new FormData()
+      Object.entries(form).forEach(([key, value]) => payload.append(key, String(value)))
+      tags.forEach((tag) => payload.append('tags', tag))
+      images.forEach((image) => payload.append('images', image))
+      await addProduct(payload)
+      toast.success('Product created successfully.')
+      navigate('/dashboard/products')
+    } catch (requestError) {
+      const responseMessage = requestError.response?.data?.message
+      setApiError(responseMessage || (requestError.response?.status === 401 || requestError.response?.status === 403 ? 'You are not authorized to create products.' : 'Unable to create product. Please try again.'))
+    } finally {
+      setSubmitting(false)
+    }
+  }
 
-              <h2 className="text-2xl font-bold">
-                Launch a polished product entry
-              </h2>
-            </div>
-          </div>
+  const field = (name, label, type = 'text', placeholder = '') => <label className="create-field">{label}<input name={name} type={type} value={form[name]} onChange={updateField} placeholder={placeholder} aria-invalid={Boolean(errors[name])} />{errors[name] && <span className="create-field-error">{errors[name]}</span>}</label>
 
-          <p>
-            Add products with validation, image previews, multi-upload support,
-            and smooth UX.
-          </p>
-        </div>
-
-        {/* Ready Box */}
-        <div className="p-2 border flex flex-col gap-2 rounded-lg border-[var(--input)] outline-none">
-          <p className="tracking-widest">Ready</p>
-
-          <p>Create, validate, and save with one click.</p>
-        </div>
-      </div>
-
-      {/* ================= MAIN ================= */}
-      <div className="grid grid-cols-12 gap-6 ">
-        {/* ================================================= */}
-        {/* LEFT - GALLERY */}
-        {/* ================================================= */}
-
-      <ImageUploader images={images} setImages={setImages} previewImages={previewImages} setPreviewImages={setPreviewImages} />
-        {/* ================================================= */}
-        {/* RIGHT - PRODUCT FORM */}
-        {/* ================================================= */}
-
-        <form
-          onSubmit={handleSubmit}
-          className="col-span-12 lg:col-span-7 border border-[var(--input)]  focus:border-[var(--input-focus)] focus:outline-none rounded-3xl bg-white p-6"
-        >
-          {/* Product Name */}
-          <div className="mb-5">
-            <label className="block text-sm font-medium mb-2">
-              Product Name
-            </label>
-
-            <input
-              type="text"
-              name="name"
-              value={formData.name}
-              // onChange={handleChange}
-              onChange={(e) =>
-                setFormData({ ...formData, name: e.target.value })
-              }
-              placeholder="iPhone 16 Pro"
-              className="w-full bg-gray-100 border  rounded-2xl p-4 outline-none border-[var(--input)]  focus:border-[var(--input-focus)] focus:outline-none"
-            />
-          </div>
-
-          {/* Short Description */}
-          <div className="mb-5">
-            <label className="block text-sm font-medium mb-2">
-              Short Description
-            </label>
-
-            <input
-              type="text"
-              name="shortDescription"
-              value={formData.shortDescription}
-              // onChange={handleChange}
-              onChange={(e) =>
-                setFormData({ ...formData, shortDescription: e.target.value })
-              }
-              placeholder="Minimum 10 characters"
-              className="w-full bg-gray-100 border  rounded-2xl p-4 outline-none border-[var(--input)]  focus:border-[var(--input-focus)] focus:outline-none"
-            />
-          </div>
-
-          {/* Description */}
-          <div className="mb-5">
-            <label className="block text-sm font-medium mb-2">
-              Description
-            </label>
-
-            <textarea
-              name="description"
-              value={formData.description}
-              // onChange={handleChange}
-              onChange={(e) =>
-                setFormData({ ...formData, description: e.target.value })
-              }
-              placeholder="Minimum 20 characters"
-              rows="5"
-              className="w-full bg-gray-100 border  rounded-2xl p-4 outline-none resize-none border-[var(--input)]  focus:border-[var(--input-focus)] focus:outline-none"
-            />
-          </div>
-
-          {/* Price + Discount */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
-            {/* Price */}
-            <div>
-              <label className="block text-sm font-medium mb-2">Price</label>
-
-              <input
-                type="number"
-                name="price"
-                value={formData.price}
-                // onChange={handleChange}
-                onChange={(e) =>
-                  setFormData({ ...formData, price: e.target.value })
-                }
-                placeholder="100"
-                className="w-full bg-gray-100 border border-[var(--input)]  focus:border-[var(--input-focus)] focus:outline-none rounded-2xl p-4 outline-none "
-              />
-            </div>
-
-            {/* Discount Price */}
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                Discount Price
-              </label>
-
-              <input
-                type="number"
-                name="discountPrice"
-                value={formData.discountPrice}
-                // onChange={handleChange}
-                onChange={(e) =>
-                  setFormData({ ...formData, discountPrice: e.target.value })
-                }
-                placeholder="90"
-                className="w-full bg-gray-100 border border-[var(--input)]  focus:border-[var(--input-focus)] focus:outline-none rounded-2xl p-4 outline-none "
-              />
-            </div>
-          </div>
-
-          {/* Stock + SKU */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
-            {/* Stock */}
-            <div>
-              <label className="block text-sm font-medium mb-2">Stock</label>
-
-              <input
-                type="number"
-                name="stock"
-                value={formData.stock}
-                // onChange={handleChange}
-                onChange={(e) =>
-                  setFormData({ ...formData, stock: e.target.value })
-                }
-                placeholder="0"
-                className="w-full bg-gray-100 border border-[var(--input)]  focus:border-[var(--input-focus)] focus:outline-none rounded-2xl p-4 outline-none "
-              />
-            </div>
-
-            {/* SKU */}
-            <div>
-              <label className="block text-sm font-medium mb-2">SKU</label>
-
-              <input
-                type="text"
-                name="sku"
-                value={formData.sku}
-                // onChange={handleChange}
-                onChange={(e) =>
-                  setFormData({ ...formData, sku: e.target.value })
-                }
-                placeholder="SKU-001"
-                className="w-full bg-gray-100 border border-[var(--input)]  focus:border-[var(--input-focus)] focus:outline-none rounded-2xl p-4 outline-none "
-              />
-            </div>
-          </div>
-
-          {/* Category + Subcategory */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
-            {/* Category */}
-            <div>
-              <label className="block text-sm font-medium mb-2">Category</label>
-
-              <select
-                name="category"
-                value={formData.category}
-                // onChange={handleChange}
-                onChange={(e) =>
-                  setFormData({ ...formData, category: e.target.value })
-                }
-                className="w-full bg-gray-100 border border-[var(--input)]  focus:border-[var(--input-focus)] focus:outline-none rounded-2xl p-4 outline-none "
-              >
-                <option value="">Select Category</option>
-
-                <option value="electronics">Electronics</option>
-
-                <option value="phones">Phones</option>
-
-                <option value="fashion">Fashion</option>
-
-                <option value="home">Home</option>
-
-                <option value="beauty">Beauty</option>
-
-                <option value="sports">Sports</option>
-              </select>
-            </div>
-
-            {/* Subcategory */}
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                Subcategory
-              </label>
-
-              <input
-                type="text"
-                name="subcategory"
-                value={formData.subcategory}
-                // onChange={handleChange}
-                onChange={(e) =>
-                  setFormData({ ...formData, subcategory: e.target.value })
-                }
-                placeholder="Smartphones"
-                className="w-full bg-gray-100 border border-[var(--input)]  focus:border-[var(--input-focus)] focus:outline-none rounded-2xl p-4 outline-none "
-              />
-            </div>
-          </div>
-
-          {/* Brand */}
-          <div className="mb-5">
-            <label className="block text-sm font-medium mb-2">Brand</label>
-
-            <input
-              type="text"
-              name="brand"
-              value={formData.brand}
-              // onChange={handleChange}
-              onChange={(e) =>
-                setFormData({ ...formData, brand: e.target.value })
-              }
-              placeholder="Apple"
-              className="w-full bg-gray-100 border  rounded-2xl p-4 outline-none border-[var(--input)]  focus:border-[var(--input-focus)] focus:outline-none"
-            />
-          </div>
-
-          {/* Featured */}
-          <div className="flex items-center gap-3 mb-6">
-            <input
-              type="checkbox"
-              id="featured"
-              name="featured"
-              checked={formData.featured}
-              // onChange={handleChange}
-              onChange={(e) =>
-                setFormData({ ...formData, featured: e.target.checked })
-              }
-              className="w-4 h-4"
-            /> 
-
-            <label htmlFor="featured" className="text-sm">
-              Featured
-            </label>
-
-
-                <input
-              type="checkbox"
-              id="active"
-              name="active"
-              checked={true}
-              // onChange={handleChange}
-            
-              className="w-4 h-4"
-            />
-
-            <label htmlFor="active" className="text-sm">
-              Active
-            </label>
-          </div>
-
-          {/* Buttons */}
-          <div className="flex justify-end gap-3">
-            {/* Cancel */}
-            <Button
-              type="button"
-              onClick={handleCancel}
-              className="px-6 py-3 opacity-50 rounded-xl border border-gray-300 transition"
-            >
-              Cancel
-            </Button>
-
-            {/* Submit */}
-            <Button
-              type="submit"
-              className="px-6 py-3 rounded-xl  text-white font-semibold  transition"
-            >
-              Add Product
-            </Button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
+  return <div className="create-product-page"><section className="create-product-header"><button type="button" className="back-products-button" onClick={handleBack}><ArrowLeft size={17} /> Back to products</button><div className="create-header-main"><div className="create-header-icon"><Package size={29} /></div><div><p className="eyebrow">CREATE PRODUCT</p><h1>Launch a <em>polished</em> product entry</h1><p>Add products with validation, image previews, multi-upload support, and smooth UX.</p></div></div><div className="ready-card"><p className="eyebrow">READY</p><span>Create, validate, and save with one click.</span></div></section><div className="create-product-columns"><section className="gallery-card"><div className="create-section-heading"><div className="create-section-icon"><ImagePlus size={22} /></div><div><h2>Gallery</h2><p>Upload multiple images and preview instantly.</p></div></div><ImageUploader previews={previews} onFiles={handleImages} onRemove={removeImage} error={errors.images} /><div className="gallery-note"><Sparkles size={17} /><span>Images are sent with the product request after you submit.</span></div></section><form className="product-form-card" onSubmit={handleSubmit} noValidate><div className="form-card-heading"><p className="eyebrow">PRODUCT INFORMATION</p><h2>Product details</h2></div>{apiError && <div className="create-api-error" role="alert">{apiError}</div>}{field('name', 'Product Name', 'text', 'Product name')}<label className="create-field">Short Description<input name="shortDescription" value={form.shortDescription} onChange={updateField} placeholder="Minimum 10 characters" aria-invalid={Boolean(errors.shortDescription)} />{errors.shortDescription && <span className="create-field-error">{errors.shortDescription}</span>}</label><label className="create-field">Description<textarea name="description" value={form.description} onChange={updateField} placeholder="Minimum 20 characters" rows="5" aria-invalid={Boolean(errors.description)} />{errors.description && <span className="create-field-error">{errors.description}</span>}</label><div className="create-form-grid">{field('price', 'Price', 'number', '0.00')}{field('discountPrice', 'Discount Price', 'number', 'Optional')}{field('stock', 'Stock', 'number', '0')}{field('sku', 'SKU', 'text', 'SKU-001')}{field('category', 'Category', 'text', 'Category')}{field('subcategory', 'Subcategory', 'text', 'Subcategory')}{field('brand', 'Brand', 'text', 'Brand')}</div><section className="tags-field"><h3>Tags</h3><div className="tags-entry"><input value={tagDraft} onChange={(event) => setTagDraft(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); addTag() } }} placeholder="Type a tag and press +" /><button type="button" onClick={addTag} aria-label="Add tag">+</button></div><div className="tag-list">{tags.map((tag) => <span key={tag}>{tag}<button type="button" onClick={() => setTags((current) => current.filter((item) => item !== tag))} aria-label={`Remove ${tag}`}>×</button></span>)}</div><p>Add one or more tags to organize the product.</p></section><div className="product-toggles"><label className="featured-toggle"><input name="featured" type="checkbox" checked={form.featured} onChange={updateField} /><span>Featured</span></label><label className="featured-toggle"><input name="active" type="checkbox" checked={form.active} onChange={updateField} /><span>Active</span></label></div><div className="create-form-actions"><Button type="button" variant="outline" onClick={handleBack}>Cancel</Button><Button type="submit" loading={submitting} disabled={submitting} className="create-submit"><Save size={17} /> {submitting ? 'Creating Product...' : 'Create Product'}</Button></div></form></div></div>
 }

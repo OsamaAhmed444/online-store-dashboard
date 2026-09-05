@@ -149,7 +149,7 @@ export default function LoginPage() {
             disabled={isSubmitting}
             className="login-submit"
           >
-            Sign In <ArrowRight />
+            Sign In
           </Button>
         </form>
 

@@ -1,135 +1,30 @@
-import {
-  Users,
-  ShieldCheck,
-  UserRound,
-  UserCheck,
-  Search,
-  UserPlus,
-} from "lucide-react";
+import React, { useEffect, useMemo, useState } from 'react'
+import { Check, Pencil, Search, Shield, ShieldCheck, Trash2, UserCheck, UserPlus, Users, UserRound, X } from 'lucide-react'
+import { toast } from 'react-toastify'
+import { addUser, deleteUser, getUsers, updateUser } from '../api/users'
+import ConfirmDialog from '../components/common/ConfirmDialog'
+import { getUsersFromResponse } from '../components/dashboard/dashboardData'
 
-import UsersTable from "../components/users/UsersTable";
+const PAGE_SIZE = 8
+const firstDefined = (...values) => values.find((value) => value !== undefined && value !== null && value !== '')
+const normalizeUser = (user) => ({ ...user, id: firstDefined(user?._id, user?.id, user?.userId), name: firstDefined(user?.name, user?.fullName, [user?.firstName, user?.lastName].filter(Boolean).join(' '), user?.username, 'Unnamed user'), email: firstDefined(user?.email, 'No email'), role: String(firstDefined(user?.role, 'customer')).toLowerCase(), verified: Boolean(firstDefined(user?.isVerified, user?.verified, user?.emailVerified, user?.isEmailVerified, false)), avatar: firstDefined(user?.avatar, user?.image, user?.profileImage) })
+const emptyForm = { firstName: '', lastName: '', username: '', email: '', password: '', role: 'customer' }
+
+function UserModal({ mode, user, onClose, onSubmit, loading }) {
+  const [form, setForm] = useState(mode === 'edit' ? { ...emptyForm, ...user } : emptyForm)
+  const updateField = (event) => setForm((previous) => ({ ...previous, [event.target.name]: event.target.value }))
+  return <div className="users-modal-backdrop"><section className="users-modal" role="dialog" aria-modal="true"><div className="users-modal-heading"><div><p className="eyebrow">USER MANAGEMENT</p><h2>{mode === 'edit' ? 'Edit User' : 'Add User'}</h2></div><button type="button" onClick={onClose} aria-label="Close"><X size={20} /></button></div><form onSubmit={(event) => { event.preventDefault(); onSubmit(form) }} className="user-form"><label>First Name<input name="firstName" value={form.firstName} onChange={updateField} required /></label><label>Last Name<input name="lastName" value={form.lastName} onChange={updateField} /></label><label>Username<input name="username" value={form.username} onChange={updateField} required /></label><label>Email<input name="email" type="email" value={form.email} onChange={updateField} required /></label>{mode === 'add' && <label>Password<input name="password" type="password" value={form.password} onChange={updateField} required /></label>}<label>Role<select name="role" value={form.role} onChange={updateField}><option value="customer">Customer</option><option value="admin">Admin</option></select></label><div className="users-modal-actions"><button type="button" className="modal-cancel" onClick={onClose}>Cancel</button><button type="submit" className="modal-submit" disabled={loading}>{loading ? 'Saving...' : mode === 'edit' ? 'Save Changes' : 'Add User'}</button></div></form></section></div>
+}
+
+function UserAvatar({ user }) { return user.avatar ? <img className="user-avatar" src={user.avatar} alt="" /> : <div className="user-avatar user-avatar-fallback">{user.name.charAt(0).toUpperCase()}</div> }
 
 export default function UsersListPage() {
-  return (
-    <div className="min-h-screen w-full bg-slate-50 p-4 dark:bg-slate-950 sm:p-6 lg:p-8">
-      <div className="mb-6 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900 sm:p-6">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <p className="mb-1 text-sm font-semibold uppercase tracking-widest text-orange-500">
-              User Management
-            </p>
-
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white sm:text-3xl">
-              Manage Users
-            </h1>
-
-            <p className="mt-1 text-base text-slate-500 dark:text-slate-400">
-              Manage users and their account information
-            </p>
-          </div>
-
-          <div className="flex w-full flex-col gap-3 sm:flex-row lg:w-auto">
-            <div className="relative w-full sm:w-64">
-              <Search
-                size={18}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-              />
-
-              <input
-                type="text"
-                placeholder="Search users..."
-                className="h-11 w-full rounded-lg border border-slate-200 bg-slate-50 pl-10 pr-4 text-base outline-none transition focus:border-orange-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-              />
-            </div>
-
-            <button
-              type="button"
-              className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-orange-500 px-5 text-base font-semibold text-white transition hover:bg-orange-600 sm:w-auto"
-            >
-              <UserPlus size={18} />
-              Add User
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-base text-slate-500 dark:text-slate-400">
-                Total Users
-              </p>
-
-              <h2 className="mt-2 text-2xl font-bold text-slate-900 dark:text-white">
-                4,120
-              </h2>
-            </div>
-
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-orange-100 text-orange-500 dark:bg-orange-500/10">
-              <Users size={22} />
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-base text-slate-500 dark:text-slate-400">
-                Admins
-              </p>
-
-              <h2 className="mt-2 text-2xl font-bold text-slate-900 dark:text-white">
-                2
-              </h2>
-            </div>
-
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-purple-100 text-purple-500 dark:bg-purple-500/10">
-              <ShieldCheck size={22} />
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-base text-slate-500 dark:text-slate-400">
-                Customers
-              </p>
-
-              <h2 className="mt-2 text-2xl font-bold text-slate-900 dark:text-white">
-                4,118
-              </h2>
-            </div>
-
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-blue-100 text-blue-500 dark:bg-blue-500/10">
-              <UserRound size={22} />
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-base text-slate-500 dark:text-slate-400">
-                Verified
-              </p>
-
-              <h2 className="mt-2 text-2xl font-bold text-slate-900 dark:text-white">
-                3,842
-              </h2>
-            </div>
-
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-500 dark:bg-emerald-500/10">
-              <UserCheck size={22} />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="w-full overflow-hidden">
-        <UsersTable />
-      </div>
-    </div>
-  );
+  const [users, setUsers] = useState([]); const [query, setQuery] = useState(''); const [page, setPage] = useState(1); const [loading, setLoading] = useState(true); const [error, setError] = useState(''); const [modal, setModal] = useState(null); const [mutationLoading, setMutationLoading] = useState(false); const [deleteTarget, setDeleteTarget] = useState(null)
+  const fetchUsers = async () => { setLoading(true); setError(''); try { const response = await getUsers(); setUsers(getUsersFromResponse(response).map(normalizeUser)) } catch (requestError) { setError(requestError.response?.status === 401 || requestError.response?.status === 403 ? 'You are not authorized to manage users.' : requestError.response?.data?.message || 'Unable to load users.') } finally { setLoading(false) } }
+  useEffect(() => { fetchUsers() }, []); useEffect(() => { setPage(1) }, [query])
+  const filteredUsers = useMemo(() => { const value = query.trim().toLowerCase(); return value ? users.filter((user) => `${user.name} ${user.username || ''} ${user.email}`.toLowerCase().includes(value)) : users }, [users, query]); const totalPages = Math.max(1, Math.ceil(filteredUsers.length / PAGE_SIZE)); const visibleUsers = filteredUsers.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+  const cards = [['Total Users', users.length, Users], ['Admins', users.filter((user) => user.role === 'admin').length, Shield], ['Customers', users.filter((user) => user.role === 'customer').length, UserRound], ['Verified', users.filter((user) => user.verified).length, UserCheck]]
+  const submitUser = async (form) => { setMutationLoading(true); try { const fields = ['firstName', 'lastName', 'username', 'email', 'password', 'role']; const payload = Object.fromEntries(fields.map((field) => [field, form[field]]).filter(([, value]) => value !== '')); if (modal.mode === 'edit') await updateUser(modal.user.id, payload); else await addUser(payload); toast.success(modal.mode === 'edit' ? 'User updated successfully.' : 'User added successfully.'); setModal(null); await fetchUsers() } catch (requestError) { toast.error(requestError.response?.data?.message || 'User mutation is not supported by the API.') } finally { setMutationLoading(false) } }
+  const removeUser = async () => { if (!deleteTarget) return; setMutationLoading(true); try { await deleteUser(deleteTarget.id); toast.success('User deleted successfully.'); setDeleteTarget(null); await fetchUsers() } catch (requestError) { toast.error(requestError.response?.data?.message || 'Unable to delete this user.') } finally { setMutationLoading(false) } }
+  return <div className="users-page"><section className="users-header"><div><p className="eyebrow">USER MANAGEMENT</p><h1>Manage Users</h1></div><div className="users-header-actions"><label className="users-search"><Search size={18} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search users..." aria-label="Search users" /></label><button className="add-user-button" type="button" onClick={() => setModal({ mode: 'add' })}><UserPlus size={18} /> Add User <span>⌄</span></button></div></section>{loading ? <div className="users-state">Loading users...</div> : error ? <div className="users-state users-error"><p>{error}</p><button type="button" onClick={fetchUsers}>Try Again</button></div> : <><section className="user-stats-grid" aria-label="User statistics">{cards.map(([label, value, Icon]) => <article className="user-stat-card" key={label}><div><p>{label}</p><strong>{value}</strong></div><span><Icon size={23} /></span></article>)}</section><section className="users-table-panel"><div className="users-table-scroll"><table className="users-table"><thead><tr><th>User</th><th>Role</th><th>Verified</th><th>Actions</th></tr></thead><tbody>{visibleUsers.map((user) => <tr key={user.id}><td><div className="user-cell"><UserAvatar user={user} /><div><strong>{user.name}</strong><span>{user.email}</span></div></div></td><td><span className="role-badge">{user.role}</span></td><td><span className={`verification-badge ${user.verified ? 'yes' : 'no'}`}>{user.verified ? <Check size={16} /> : <X size={16} />} {user.verified ? 'Yes' : 'No'}</span></td><td><div className="user-actions"><button className="edit-action" type="button" onClick={() => setModal({ mode: 'edit', user })} aria-label={`Edit ${user.name}`}><Pencil size={17} /></button><button className="verify-action" type="button" onClick={() => toast.error('The API does not provide a user verification endpoint.')} aria-label={`Verify ${user.name}`}><ShieldCheck size={17} /></button><button className="delete-action" type="button" onClick={() => setDeleteTarget(user)} aria-label={`Delete ${user.name}`}><Trash2 size={17} /></button></div></td></tr>)}</tbody></table></div>{visibleUsers.length === 0 && <div className="users-empty">No users found.</div>}{filteredUsers.length > 0 && <div className="users-pagination"><span>Page {page} of {totalPages}</span><div><button type="button" disabled={page === 1} onClick={() => setPage((value) => value - 1)}>Previous</button><button type="button" disabled={page === totalPages} onClick={() => setPage((value) => value + 1)}>Next</button></div></div>}</section></>} {modal && <UserModal mode={modal.mode} user={modal.user} onClose={() => setModal(null)} onSubmit={submitUser} loading={mutationLoading} />}<ConfirmDialog isOpen={Boolean(deleteTarget)} title="Delete user" message={`Delete ${deleteTarget?.name || 'this user'}? This action cannot be undone.`} confirmText="Delete" loading={mutationLoading} onCancel={() => setDeleteTarget(null)} onConfirm={removeUser} /></div>
 }

@@ -1,276 +1,116 @@
-import axios from "axios";
-import React, { useEffect, useState } from "react";
-import ProductTable from "../components/products/ProductTable";
-import { Plus } from "lucide-react";
-import { Package2 } from "lucide-react";
-import { Star } from "lucide-react";
-import { TrendingUp } from "lucide-react";
-import { Boxes } from "lucide-react";
-import { SlidersHorizontal } from "lucide-react";
-import { Search } from "lucide-react";
-import { Tag } from "lucide-react";
-import Button from "../components/common/Button";
-import { useNavigate } from "react-router-dom";
-import { getProducts } from "../api/product";
-import Pagination from "../components/common/Pagination";
-import EmptyState from "../components/common/EmptyState";
-import Spinner from "../components/common/Spinner";
-export default function ProductsListPage() {
-  const [products, setProducts] = useState([]);
-  const [showFilter, setShowFilter] = useState(false);
-  const [search, setSearch] = useState("");
-  const [category, setCategory] = useState("all");
-  const [subcategory, setsubCategory] = useState("");
-  const [lodding, setLodding] = useState(true);
-  
-  console.log(category);
-  useEffect(() => {
-  //   const fetchData=async()=>{
-  //     try{
-  //        const filters = category === "all"
-  //       ? {}
-  //       : { category: category };
-  //       console.log(filters)
-  //     const res=await getProducts(filters)
-  //     setProducts(res.data.products)
-  //     console.log(res.data.products)
-  //   }
-  //   catch(error){
-  //     console.log(error)
-  //   }
-  // }
-  // fetchData()
-  
-    async function getData() {
-      try {
-        const data = await axios.get(
-          "https://e-commerce-api-3wara.vercel.app/products",
-        );
-        setProducts(data.data.products);
-      } catch (error) {
-        console.log(error.message);
-      } finally {
-        setLodding(false);
-      }
-    }
+import React, { useEffect, useMemo, useState } from 'react'
+import { Boxes, Check, Edit3, Package, Plus, Search, SlidersHorizontal, Star, Trash2, TrendingUp, X } from 'lucide-react'
+import { toast } from 'react-toastify'
+import { useNavigate } from 'react-router-dom'
+import { deleteProduct, getProducts, updateProduct } from '../api/products'
+import ConfirmDialog from '../components/common/ConfirmDialog'
 
-    getData();
-  }, []);
+const PAGE_SIZE = 8
 
-  console.log(products);
+const firstDefined = (...values) => values.find((value) => value !== undefined && value !== null && value !== '')
 
-  const inStock = products.filter((product) => product.stock > 0).length;
-  const outStock = products.filter((product) => product.stock === 0).length;
-
-  const featured = products.filter(
-    (product) => product.featured === true,
-  ).length;
-  const total = products.length;
-
-  const arr = [
-    {
-      icon: <Package2 className="text-[var(--text)]  "/>,
-      num: total,
-      text: "Total",
-    },
-    {
-      icon: <Star  className="text-[var(--text)]"/>,
-      num: featured,
-      text: "Featured",
-    },
-    {
-      icon: <TrendingUp className="text-[var(--text)]" />,
-      num: inStock,
-      text: "In Stock",
-    },
-    {
-      icon: <Boxes  className="text-[var(--text)]"/>,
-      num: outStock,
-      text: "Out of Stock",
-    },
-  ];
-  function handlefilter() {
-    setShowFilter(!showFilter);
-  }
-
-  const filterProducts = products.filter((product) => {
-    if (!product.name.toLowerCase().includes(search.toLowerCase())) {
-      return false;
-    }
-
-    if (category !== "all") {
-      if (product.category !== category) {
-        return false;
-      }
-    }
-    if (
-      !product.subcategory.toLowerCase().includes(subcategory.toLowerCase())
-    ) {
-      return false;
-    }
-    return true;
-  });
-
-    const [currentPage, setCurrentPage] = useState(1);
-const productsPerPage = 6;
-const totalPages = Math.ceil(filterProducts.length / productsPerPage);
-
-const startIndex = (currentPage - 1) * productsPerPage;
-const endIndex = startIndex + productsPerPage;
-
-const currentProducts = filterProducts.slice(startIndex, endIndex);
-  return (
-    <div className="bg-gray-100 m-10 border rounded-2xl " style={{background:"var(--surface)" ,border:"1px solid var(--border-strong)"}}>
-      <div className="flex flex-col m-10 ">
-        {lodding ? (
-        <Spinner/>
-        ) : (
-          <AddProductButton  />
-        )}
-
-        <div className="grid gap-4 grid-cols-2 md:grid-cols-4 mb-10" >
-          {arr.map((item, index) => {
-            return (
-              <div
-                key={index}
-                className="border flex flex-col gap-2 px-6 py-8 rounded-2xl"
-                style={{background:"var(--surface)" ,border:"1px solid var(--border-strong)"}}
-              >
-                <div>{item.icon}</div>
-                <div>
-                  <p>{item.num}</p>
-                  <p>{item.text}</p>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        <div className="border p-4 rounded-2xl" style={{background:"var(--surface)" ,border:"1px solid var(--border-strong)"}}>
-          <div className="grid grid-cols-12 gap-4 py-4">
-            <div className="col-span-12 sm:col-span-6 md:col-span-8 relative" >
-              <Search
-                size={25}
-                className="absolute pl-2 top-1/2 left-1 opacity-30  -translate-y-1/2"
-              />
-              <input
-            
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search Products"
-                className=" w-full py-4 rounded-lg pl-8 border border-[var(--input)]  focus:border-[var(--input-focus)] focus:outline-none"
-              />
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-4 md:gap-4 col-span-12 sm:col-span-6 md:col-span-4" >
-              <Button
-                onClick={handlefilter}
-                className="  cursor-pointer rounded-lg flex justify-center items-center gap-1 md:gap-2 sm:flex-1 "
-              >
-                <span>
-                  <SlidersHorizontal size={15} className="text-sm" />
-                </span>
-                <span className="text-xlg">Filter</span>
-              </Button>
-              <Button className=" p-2 cursor-pointer flex-1 rounded-lg flex justify-center items-center gap-1 sm:flex-1">
-                <span>
-                  <Search size={15} />
-                </span>
-                <span>Search</span>
-              </Button>
-            </div>
-          </div>
-
-          <div className={`${showFilter ? "block" : "hidden"} mt-4`} >
-            <hr style={{background:"var(--surface)" ,border:"1px solid var(--border-strong)"}}></hr>
-
-            <div className="grid grid-cols-12 gap-4 py-4 w-full">
-              <div className="flex flex-col col-span-12 sm:col-span-6 gap-2 w-full">
-                <div className="flex gap-2 items-center">
-                  <Boxes size={15} />
-                  <p>Category</p>
-                </div>
-
-                <select
-                  className="w-full border p-2 rounded-lg border-[var(--input)]  focus:border-[var(--input-focus)] focus:outline-none"
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  style={{background:"var(--surface)"}}
-                >
-                  <option value="all">All</option>
-                  <option value="electronics">Electronics</option>
-                  <option value="phones">Phones</option>
-                  <option value="fashion">Fashion</option>
-                  <option value="home">Home</option>
-                  <option value="beauty">Beauty</option>
-                  <option value="sports">Sports</option>
-                </select>
-              </div>
-
-              <div className="flex flex-col col-span-12 sm:col-span-6 gap-2"   >
-                <div className="flex gap-2 items-center">
-                  <Tag size={15} />
-                  <p>Category</p>
-                </div>
-
-                <input
-                  value={subcategory}
-                  onChange={(e) => setsubCategory(e.target.value)}
-                  placeholder="e.g SmartPhones"
-                  className="w-full border p-2 rounded-lg border-[var(--input)]  focus:border-[var(--input-focus)] focus:outline-none"
-                />
-              </div>
-              {/* / */}
-            </div>
-          </div>
-        </div>
-
-        {/* 
-         {lodding ? (
-        <div className="flex justify-center items-center h-64">
-          <div className="w-10 h-10 border-4 border-gray-300 border-t-blue-500 rounded-full animate-spin"></div>
-        </div>
-      ) : (
-        // <div>ss</div>
-
-        <ProductTable products={filterProducts} />
-      )} */}
-        {lodding ? (
-        <Spinner/>
-        ) : (currentProducts.length!==0?
-          <ProductTable products={currentProducts} setProducts={setProducts} lodding={lodding} setLodding={setLodding}/>:<EmptyState/>
-        )}
-      </div>
-
-          {currentProducts.length!==0?<Pagination setCurrentPage={setCurrentPage} totalPages={totalPages} currentPage={currentPage}/>:""}
-    </div>
-  );
+const productsFromResponse = (response) => {
+  const payload = response?.data
+  if (Array.isArray(payload)) return payload
+  if (Array.isArray(payload?.products)) return payload.products
+  if (Array.isArray(payload?.data)) return payload.data
+  return []
 }
 
-function AddProductButton() {
-    const navigate = useNavigate()
-  return (
-    <div className="flex flex-col gap-4 md:gap-0 md:flex-row md:justify-between md:items-center p-4 border rounded-2xl mb-10 bg-gradient-to-r from-orange-100 to-white" style={{ border:"1px solid var(--border-strong)"}}>
-      <div className="flex gap-4 items-center py-6" >
-        <div className="border p-2 rounded-lg">
-          <Package2 />
-        </div>
-        <div>
-          <p className="[letter-spacing:2px]">Product Dashboard</p>
-          <h1 className="text-3xl font-bold">Products</h1>
-        </div>
-      </div>
+const normalizeProduct = (product) => ({
+  ...product,
+  id: firstDefined(product?._id, product?.id, product?.productId),
+  name: firstDefined(product?.name, product?.title, 'Unnamed product'),
+  description: firstDefined(product?.shortDescription, product?.description, ''),
+  price: Number(firstDefined(product?.price, product?.discountPrice, 0)),
+  stock: Number(firstDefined(product?.stock, product?.quantity, product?.inventory, 0)),
+  category: firstDefined(product?.category, 'Uncategorized'),
+  subcategory: firstDefined(product?.subcategory, ''),
+  featured: Boolean(firstDefined(product?.featured, product?.isFeatured, false)),
+  images: Array.isArray(product?.images) ? product.images : [],
+})
 
-      <div>
-        <Button className="w-full group flex gap-2 items-center justify-center border py-3 px-3 rounded-2xl shadow-[0_4px_12px_rgba(249,115,22,0.25)]" onClick={()=> {navigate("/dashboard/products/add")} }>
-          <span className="inline-block transition-all duration-200 group-hover:rotate-90 text-lg leading-none">
-            <Plus />
-          </span>
-          <span className="inline-block text-sm font-bold">Add Product</span>
-        </Button>
-      </div>
+const imageUrl = (image) => typeof image === 'string' ? image : firstDefined(image?.url, image?.secure_url, image?.path)
+const formatCurrency = (value) => `$${Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
-  
-    </div>
-  );
+function ProductImage({ product }) {
+  const [failed, setFailed] = useState(false)
+  const source = imageUrl(product.images[0])
+  if (!source || failed) return <div className="product-image-placeholder"><Package size={36} /></div>
+  return <img className="product-image" src={source} alt={product.name} onError={() => setFailed(true)} />
+}
+
+function ProductEditModal({ product, onClose, onSubmit, loading }) {
+  const [form, setForm] = useState({ name: product.name, price: product.price, stock: product.stock, category: product.category, featured: product.featured })
+  const updateField = (event) => setForm((previous) => ({ ...previous, [event.target.name]: event.target.type === 'checkbox' ? event.target.checked : event.target.value }))
+  return <div className="products-modal-backdrop"><section className="products-modal" role="dialog" aria-modal="true" aria-labelledby="edit-product-title"><div className="products-modal-heading"><div><p className="eyebrow">PRODUCT MANAGEMENT</p><h2 id="edit-product-title">Edit Product</h2></div><button type="button" onClick={onClose} aria-label="Close"><X size={20} /></button></div><form className="product-edit-form" onSubmit={(event) => { event.preventDefault(); onSubmit(form) }}><label>Product name<input name="name" value={form.name} onChange={updateField} required /></label><label>Category<input name="category" value={form.category} onChange={updateField} /></label><label>Price<input name="price" type="number" min="0" value={form.price} onChange={updateField} required /></label><label>Stock<input name="stock" type="number" min="0" value={form.stock} onChange={updateField} required /></label><label className="product-featured-field"><input name="featured" type="checkbox" checked={form.featured} onChange={updateField} /> Featured product</label><div className="products-modal-actions"><button className="products-modal-cancel" type="button" onClick={onClose}>Cancel</button><button className="products-modal-submit" type="submit" disabled={loading}>{loading ? 'Saving...' : 'Save Changes'}</button></div></form></section></div>
+}
+
+function ProductCard({ product, onEdit, onDelete }) {
+  return <article className="product-card"><div className="product-card-image"><ProductImage product={product} />{product.featured && <span className="product-featured"><Star size={13} /> Featured</span>}<span className={`product-stock ${product.stock > 0 ? 'in-stock' : 'out-stock'}`}>{product.stock > 0 ? `${product.stock} in Stock` : 'Out of Stock'}</span></div><div className="product-card-body"><h3>{product.name}</h3><p className="product-category">{product.category}{product.subcategory ? ` · ${product.subcategory}` : ''}</p><p className="product-description">{product.description || 'No description provided.'}</p><strong className="product-price">{formatCurrency(product.price)}</strong><div className="product-card-footer"><span className={`product-status ${product.stock > 0 ? 'in-stock' : 'out-stock'}`}>{product.stock > 0 ? <Check size={14} /> : <X size={14} />}{product.stock > 0 ? 'In Stock' : 'Out of Stock'}</span><div className="product-actions"><button type="button" className="product-edit-action" onClick={() => onEdit(product)} aria-label={`Edit ${product.name}`}><Edit3 size={16} /></button><button type="button" className="product-delete-action" onClick={() => onDelete(product)} aria-label={`Delete ${product.name}`}><Trash2 size={16} /></button></div></div></div></article>
+}
+
+export default function ProductsListPage() {
+  const navigate = useNavigate()
+  const [products, setProducts] = useState([])
+  const [draftSearch, setDraftSearch] = useState('')
+  const [search, setSearch] = useState('')
+  const [showFilters, setShowFilters] = useState(false)
+  const [draftCategory, setDraftCategory] = useState('all')
+  const [draftStock, setDraftStock] = useState('all')
+  const [draftFeatured, setDraftFeatured] = useState('all')
+  const [filters, setFilters] = useState({ category: 'all', stock: 'all', featured: 'all', sort: 'newest' })
+  const [page, setPage] = useState(1)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [deleteTarget, setDeleteTarget] = useState(null)
+  const [editTarget, setEditTarget] = useState(null)
+  const [mutationLoading, setMutationLoading] = useState(false)
+
+  const fetchProducts = async () => {
+    setLoading(true)
+    setError('')
+    try {
+      const response = await getProducts()
+      setProducts(productsFromResponse(response).map(normalizeProduct))
+    } catch (requestError) {
+      setError(requestError.response?.status === 401 || requestError.response?.status === 403 ? 'You are not authorized to view products.' : requestError.response?.data?.message || 'Unable to load products.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => { fetchProducts() }, [])
+  useEffect(() => { setPage(1) }, [search, filters])
+
+  const categories = useMemo(() => [...new Set(products.map((product) => product.category).filter(Boolean))].sort(), [products])
+  const filteredProducts = useMemo(() => {
+    const value = search.trim().toLowerCase()
+    const result = products.filter((product) => {
+      const searchable = `${product.name} ${product.category} ${product.subcategory} ${product.sku || ''}`.toLowerCase()
+      if (value && !searchable.includes(value)) return false
+      if (filters.category !== 'all' && product.category !== filters.category) return false
+      if (filters.stock === 'in' && product.stock <= 0) return false
+      if (filters.stock === 'out' && product.stock > 0) return false
+      if (filters.featured === 'yes' && !product.featured) return false
+      if (filters.featured === 'no' && product.featured) return false
+      return true
+    })
+    return result.sort((a, b) => {
+      if (filters.sort === 'price-low') return a.price - b.price
+      if (filters.sort === 'price-high') return b.price - a.price
+      if (filters.sort === 'name-az') return a.name.localeCompare(b.name)
+      if (filters.sort === 'name-za') return b.name.localeCompare(a.name)
+      return 0
+    })
+  }, [products, search, filters])
+
+  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / PAGE_SIZE))
+  const visibleProducts = filteredProducts.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+  const applyFilters = () => { setSearch(draftSearch); setFilters({ category: draftCategory, stock: draftStock, featured: draftFeatured, sort: filters.sort }); setShowFilters(false) }
+  const clearFilters = () => { setDraftSearch(''); setSearch(''); setDraftCategory('all'); setDraftStock('all'); setDraftFeatured('all'); setFilters({ category: 'all', stock: 'all', featured: 'all', sort: 'newest' }); setShowFilters(false) }
+  const removeProduct = async () => { if (!deleteTarget) return; setMutationLoading(true); try { await deleteProduct(deleteTarget.id); setProducts((current) => current.filter((product) => product.id !== deleteTarget.id)); toast.success('Product deleted successfully.'); setDeleteTarget(null) } catch (requestError) { toast.error(requestError.response?.data?.message || 'Unable to delete this product.') } finally { setMutationLoading(false) } }
+  const saveProduct = async (form) => { setMutationLoading(true); try { await updateProduct(editTarget.id, { name: form.name, price: Number(form.price), stock: Number(form.stock), category: form.category, featured: form.featured }); toast.success('Product updated successfully.'); setEditTarget(null); await fetchProducts() } catch (requestError) { toast.error(requestError.response?.data?.message || 'Unable to update this product.') } finally { setMutationLoading(false) } }
+
+  return <div className="products-page"><section className="products-header"><div className="products-header-copy"><div className="products-header-icon"><Package size={25} /></div><div><p className="eyebrow">PRODUCT DASHBOARD</p><h1>Products</h1><p>Manage your store products, track inventory and boost your sales.</p></div></div><button className="add-product-button" type="button" onClick={() => navigate('/dashboard/products/add')}><Plus size={20} /> Add Product</button></section>{loading ? <div className="products-state">Loading products...</div> : error ? <div className="products-state products-error"><p>{error}</p><button type="button" onClick={fetchProducts}>Try Again</button></div> : <><section className="product-stats-grid" aria-label="Product statistics"><article><span><Boxes size={21} /></span><div><strong>{products.length}</strong><small>Total</small></div></article><article><span><Star size={21} /></span><div><strong>{products.filter((product) => product.featured).length}</strong><small>Featured</small></div></article><article><span><TrendingUp size={21} /></span><div><strong>{products.filter((product) => product.stock > 0).length}</strong><small>In Stock</small></div></article><article><span><Boxes size={21} /></span><div><strong>{products.filter((product) => product.stock <= 0).length}</strong><small>Out of Stock</small></div></article></section><section className="products-search-panel"><div className="products-search-row"><label className="products-search-input"><Search size={20} /><input value={draftSearch} onChange={(event) => setDraftSearch(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') setSearch(draftSearch) }} placeholder="Search products..." aria-label="Search products" /></label><button className="products-filter-button" type="button" onClick={() => setShowFilters((value) => !value)}><SlidersHorizontal size={18} /> Filters</button><button className="products-search-button" type="button" onClick={() => setSearch(draftSearch)}><Search size={18} /> Search</button></div>{showFilters && <div className="products-filters"><label>Category<select value={draftCategory} onChange={(event) => setDraftCategory(event.target.value)}><option value="all">All categories</option>{categories.map((category) => <option value={category} key={category}>{category}</option>)}</select></label><label>Stock<select value={draftStock} onChange={(event) => setDraftStock(event.target.value)}><option value="all">All stock</option><option value="in">In stock</option><option value="out">Out of stock</option></select></label><label>Featured<select value={draftFeatured} onChange={(event) => setDraftFeatured(event.target.value)}><option value="all">All products</option><option value="yes">Featured</option><option value="no">Not featured</option></select></label><label>Sort<select value={filters.sort} onChange={(event) => setFilters((current) => ({ ...current, sort: event.target.value }))}><option value="newest">Default order</option><option value="price-low">Price: Low to High</option><option value="price-high">Price: High to Low</option><option value="name-az">Name: A-Z</option><option value="name-za">Name: Z-A</option></select></label><div className="products-filter-actions"><button type="button" onClick={clearFilters}>Clear Filters</button><button type="button" onClick={applyFilters}>Apply Filters</button></div></div>}</section>{visibleProducts.length === 0 ? <div className="products-state"><p>{search || filters.category !== 'all' || filters.stock !== 'all' || filters.featured !== 'all' ? 'No products match your search or filters.' : 'No products found.'}</p>{(search || filters.category !== 'all' || filters.stock !== 'all' || filters.featured !== 'all') && <button type="button" onClick={clearFilters}>Clear Filters</button>}</div> : <><section className="products-grid">{visibleProducts.map((product) => <ProductCard key={product.id} product={product} onEdit={setEditTarget} onDelete={setDeleteTarget} />)}</section><div className="products-pagination"><span>Page {page} of {totalPages}</span><div><button type="button" disabled={page === 1} onClick={() => setPage((value) => value - 1)}>Previous</button><button type="button" disabled={page === totalPages} onClick={() => setPage((value) => value + 1)}>Next</button></div></div></>}</>}{editTarget && <ProductEditModal product={editTarget} onClose={() => setEditTarget(null)} onSubmit={saveProduct} loading={mutationLoading} />}<ConfirmDialog isOpen={Boolean(deleteTarget)} title="Delete product" message={`Are you sure you want to delete ${deleteTarget?.name || 'this product'}?`} confirmText="Delete" loading={mutationLoading} onCancel={() => setDeleteTarget(null)} onConfirm={removeProduct} /></div>
 }

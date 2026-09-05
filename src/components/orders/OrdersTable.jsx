@@ -1,7 +1,9 @@
 import React from 'react'
 
-export default function OrdersTable() {
+export function OrdersTable() {
   return (
     <div>OrdersTable</div>
   )
 }
+
+export default OrdersTable

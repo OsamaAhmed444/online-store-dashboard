@@ -7,14 +7,6 @@ import {
 
 export const AuthContext = createContext(null);
 
-const DEMO_ADMIN = {
-  _id: "demo-admin",
-  username: "Admin",
-  email: "admin@koda.com",
-  role: "admin",
-  avatar: "",
-};
-
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
@@ -26,22 +18,6 @@ export function AuthProvider({ children }) {
   const login = async (email, password) => {
     const normalizedEmail = String(email || "").trim().toLowerCase();
     const normalizedPassword = String(password || "");
-
-    if (
-      normalizedEmail === "admin@koda.com" &&
-      normalizedPassword === "teamone"
-    ) {
-      const demoToken = "demo-admin-token";
-
-      sessionStorage.setItem("token", demoToken);
-      setToken(demoToken);
-      setUser(DEMO_ADMIN);
-
-      return {
-        token: demoToken,
-        user: DEMO_ADMIN,
-      };
-    }
 
     try {
       const response = await loginApi({
@@ -78,13 +54,6 @@ export function AuthProvider({ children }) {
       const savedToken = sessionStorage.getItem("token");
 
       if (!savedToken) {
-        setLoading(false);
-        return;
-      }
-
-      if (savedToken === "demo-admin-token") {
-        setToken(savedToken);
-        setUser(DEMO_ADMIN);
         setLoading(false);
         return;
       }
