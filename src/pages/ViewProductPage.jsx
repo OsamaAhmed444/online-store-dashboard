@@ -1,230 +1,102 @@
 
-import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { getProductById } from "../api/product";
+import React, { useEffect, useState } from 'react'
+import { ArrowLeft, ChevronLeft, ChevronRight, Edit3, Package, Star, Tag } from 'lucide-react'
+import { useNavigate, useParams } from 'react-router-dom'
+import { getProductById } from '../api/products'
+import EmptyState from '../components/common/EmptyState'
+import { LoadingScreen } from '../components/common/Spinner'
 
-function ViewProductPage() {
+const firstDefined = (...values) => values.find((value) => value !== undefined && value !== null && value !== '')
+const imageUrl = (image) => typeof image === 'string' ? image : firstDefined(image?.url, image?.secure_url)
+const formatCurrency = (value) => `$${Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
-  const navigate = useNavigate();
+export default function ViewProductPage() {
+  const { id } = useParams()
+  const navigate = useNavigate()
+  const [product, setProduct] = useState(null)
+  const [activeImage, setActiveImage] = useState(0)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
-  const [product, setProduct] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
- const {id} = useParams()
   useEffect(() => {
-    const fetchProduct = async () => {
-      try {
-        setLoading(true);
+    let active = true
+    getProductById(id).then((response) => {
+      if (active) setProduct(response.data?.product || response.data?.data || response.data)
+    }).catch((requestError) => {
+      if (active) setError(requestError.response?.data?.message || 'Unable to load product details.')
+    }).finally(() => { if (active) setLoading(false) })
+    return () => { active = false }
+  }, [id])
 
-        console.log("PRODUCT ID:", id);
+  if (loading) return <LoadingScreen text="Loading product details..." />
+  if (error || !product) return <EmptyState title={error || 'Product not found'} />
 
-        const response = await getProductById(id);
+  const images = Array.isArray(product.images) ? product.images.map(imageUrl).filter(Boolean) : []
+  const stock = Number(firstDefined(product.stock, product.quantity, 0))
+  const moveImage = (direction) => setActiveImage((current) => (current + direction + images.length) % images.length)
 
-        console.log("FULL RESPONSE:", response);
-        console.log("RESPONSE DATA:", response.data);
-
-        setProduct(response.data.product);
-      } catch (err) {
-        console.error("API ERROR:", err);
-        setError("Failed to load product");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    // مهم: ما نعملش request لو مفيش id
-    if (id) {
-      fetchProduct();
-    } else {
-      setLoading(false);
-      setError("Product ID not found");
-    }
-  }, [id]);
-
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-[400px]">
-        <p className="text-xl">Loading...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="p-6 text-red-500">
-        {error}
-      </div>
-    );
-  }
-
-  if (!product) {
-    return (
-      <div className="p-6">
-        Product not found
-      </div>
-    );
-  }
-
-  return (
-    <div className="p-6 bg-slate-100 min-h-screen">
-
-      {/* Header */}
-      <div className="bg-gradient-to-r from-slate-950 to-slate-800 text-white rounded-3xl p-8 mb-6">
-
-        <button
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-gray-300 hover:text-white mb-6"
-        >
-          ← Back
-        </button>
-
-        <div className="flex items-center gap-4">
-          <div className="text-3xl">
-            👁
-          </div>
-
-          <div>
-            <h1 className="text-3xl font-bold">
-              {product.name}
-            </h1>
-
-            <p className="text-gray-400">
-              Product details overview
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Product */}
-      <div className="grid grid-cols-12 gap-6">
-
-        {/* LEFT - IMAGE */}
-        <div className="col-span-7">
-          <div className="bg-white rounded-3xl overflow-hidden shadow-sm">
-
-            <img
-              src={product.images[0].url}
-              alt={product.name}
-              className="w-full h-[450px] object-cover"
-            />
-
-          </div>
-        </div>
-
-        {/* RIGHT */}
-        <div className="col-span-5 space-y-5">
-
-          {/* Overview */}
-          <div className="bg-white rounded-3xl p-7 shadow-sm">
-
-            <p className="text-blue-500 text-sm mb-3">
-              OVERVIEW
-            </p>
-
-            <h2 className="text-3xl font-bold text-slate-900 mb-4">
-              {product.name}
-            </h2>
-
-            <p className="text-slate-600 leading-7">
-              {product.description}
-            </p>
-
-          </div>
-
-          {/* Price + Discount */}
-          <div className="grid grid-cols-2 gap-4">
-
-            <div className="bg-white rounded-2xl p-6 shadow-sm">
-              <p className="text-sm text-slate-500 mb-3">
-                PRICE
-              </p>
-
-              <p className="text-2xl font-bold">
-                ${product.price}
-              </p>
-            </div>
-
-            <div className="bg-white rounded-2xl p-6 shadow-sm">
-              <p className="text-sm text-slate-500 mb-3">
-                DISCOUNT
-              </p>
-
-              <p className="text-2xl font-bold">
-                ${product.discount || 0}
-              </p>
-            </div>
-
-          </div>
-
-          {/* Stock + SKU */}
-          <div className="grid grid-cols-2 gap-4">
-
-            <div className="bg-white rounded-2xl p-6 shadow-sm">
-              <p className="text-sm text-slate-500 mb-3">
-                STOCK
-              </p>
-
-              <p className="text-2xl font-bold">
-                {product.stock}
-              </p>
-            </div>
-
-            <div className="bg-white rounded-2xl p-6 shadow-sm">
-              <p className="text-sm text-slate-500 mb-3">
-                SKU
-              </p>
-
-              <p className="text-2xl font-bold">
-                {product.sku}
-              </p>
-            </div>
-
-            
-
-          </div>
-
-            <div className="bg-white rounded-2xl p-6 shadow-sm">
-              
-              <p className="text-sm text-slate-500 mb-3">
-                tags
-              </p>
-              <p className="text-2xl font-bold">
-                #{product.tags[0]}
-              </p>
-            </div>
-
-             
-
-            <div className="bg-white rounded-2xl p-6 shadow-sm">
-              
-              <p className="text-sm text-slate-500 mb-3">
-                Category Information
-              </p>
-              <p className="text-2xl font-bold">
-                {product.category}.{product.subcategory}.{product.brand}
-              </p>
-            </div>
-
-
-            
-            <div className="bg-white rounded-2xl p-6 shadow-sm">
-              
-              <p className="text-sm text-slate-500 mb-3">
-                Highlights
-              </p>
-              <p className="text-md ">
-                {product.shortDescription}
-                </p>
-            </div>
-
-            
-
-
-        </div>
-      </div>
+  return <div className="product-detail-page">
+    <div className="product-detail-toolbar">
+      <button type="button" className="back-products-button" onClick={() => navigate('/dashboard/products')}><ArrowLeft size={17} /> Back to products</button>
+      <button type="button" className="product-detail-edit" onClick={() => navigate(`/dashboard/products/${id}/edit`)}><Edit3 size={16} /> Edit product</button>
     </div>
-  );
+    <section className="product-detail-card">
+      <div className="product-detail-gallery">
+        <div className="product-detail-main-image">
+          {images[activeImage] ? <img key={images[activeImage]} src={images[activeImage]} alt={product.name} /> : <Package size={56} />}
+          {product.featured && <span className="product-featured"><Star size={13} /> Featured</span>}
+          {images.length > 1 && <>
+            <button type="button" className="product-detail-nav-arrow left" onClick={() => moveImage(-1)} aria-label="Previous image"><ChevronLeft size={20} /></button>
+            <button type="button" className="product-detail-nav-arrow right" onClick={() => moveImage(1)} aria-label="Next image"><ChevronRight size={20} /></button>
+          </>}
+        </div>
+        {images.length > 1 && <div className="product-detail-thumbnails">{images.map((image, index) => <button type="button" className={index === activeImage ? 'active' : ''} key={image} onClick={() => setActiveImage(index)}><img src={image} alt={`${product.name} ${index + 1}`} /></button>)}</div>}
+        {images.length > 1 && <div className="product-detail-indicators">{images.map((image, index) => <button type="button" className={index === activeImage ? 'active' : ''} key={`dot-${image}`} onClick={() => setActiveImage(index)} aria-label={`Show image ${index + 1}`} />)}</div>}
+      </div>
+      <div className="product-detail-copy">
+        <p className="eyebrow">PRODUCT DETAILS</p>
+        <h1>{product.name || product.title}</h1>
+        <p className="product-detail-category">{product.category || 'Uncategorized'}{product.subcategory ? ` · ${product.subcategory}` : ''}{product.brand ? ` · ${product.brand}` : ''}</p>
+
+        <section className="product-detail-info-card">
+          <h4>Overview</h4>
+          <p className="product-detail-description">{product.description || product.shortDescription || 'No description provided.'}</p>
+        </section>
+
+        <section className="product-detail-info-card product-detail-pricing">
+          <div>
+            <h4>Price</h4>
+            <strong className="product-detail-price">{formatCurrency(product.price)}</strong>
+          </div>
+          <div>
+            <h4>Discount</h4>
+            <strong className={product.discountPrice > 0 ? 'product-detail-discount' : 'product-detail-discount muted'}>{product.discountPrice > 0 ? formatCurrency(product.discountPrice) : 'No discount'}</strong>
+          </div>
+          <div>
+            <h4>Stock</h4>
+            <span className={`product-detail-stock ${stock > 0 ? 'in-stock' : 'out-stock'}`}>{stock > 0 ? `${stock} in stock` : 'Out of stock'}</span>
+          </div>
+        </section>
+
+        <section className="product-detail-info-card">
+          <h4>Product Information</h4>
+          <dl className="product-detail-meta">
+            <div><dt>SKU</dt><dd>{product.sku || '—'}</dd></div>
+            <div><dt>Brand</dt><dd>{product.brand || '—'}</dd></div>
+            <div><dt>Category</dt><dd>{product.category || '—'}</dd></div>
+            <div><dt>Subcategory</dt><dd>{product.subcategory || '—'}</dd></div>
+            <div><dt>Active</dt><dd>{product.isActive === false ? 'No' : 'Yes'}</dd></div>
+          </dl>
+        </section>
+
+        {Array.isArray(product.tags) && product.tags.length > 0 && <section className="product-detail-info-card">
+          <h4><Tag size={14} /> Tags</h4>
+          <div className="product-detail-tags">{product.tags.map((tag) => <span key={typeof tag === 'string' ? tag : tag.name}>{typeof tag === 'string' ? tag : tag.name}</span>)}</div>
+        </section>}
+      </div>
+    </section>
+  </div>
 }
 
-export default ViewProductPage;
+
 

@@ -1,7 +1,58 @@
-import React from 'react'
+import { useEffect, useState } from 'react'
+import api from '../../api/axios'
+import Spinner from '../common/Spinner'
+import EmptyState from '../common/EmptyState'
 
 export default function TopProductsTable() {
+  const [products, setProducts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    const fetchTopProducts = async () => {
+      try {
+        setLoading(true)
+        const response = await api.get('/orders/admin/dashboard')
+
+        const allProducts = response.data?.dashboard?.topProducts || []
+        setProducts(allProducts)
+      } catch (err) {
+        setError(err.message)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchTopProducts()
+  }, [])
+
+  if (loading) return <Spinner />
+  if (error) return <EmptyState title="Error" message={error} />
+
   return (
-    <div>TopProductsTable</div>
+    <div className="overflow-x-auto surface-panel">
+      <h3 className="text-lg font-bold mb-4">Top Product</h3>
+      <table className="min-w-full divide-y divide-current/10">
+        <thead>
+          <tr>
+            <th className="px-6 py-3 text-right text-xs text-center font-medium uppercase opacity-60">Product Name</th>
+            <th className="px-6 py-3 text-right text-xs font-medium uppercase opacity-60">Sales</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-current/10">
+          {products.map((product) => (
+            <tr key={product._id || product.id} className="hover:bg-current/5 transition-colors">
+              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                {product.name}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-[#F97316] font-bold">
+                {product.totalSold}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   )
 }
+

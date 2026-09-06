@@ -1,247 +1,52 @@
-import axios from "axios";
-import React, { useEffect, useState } from "react";
-import ProductTable from "../components/products/ProductTable";
-import { Plus } from "lucide-react";
-import { Package2 } from "lucide-react";
-import { Star } from "lucide-react";
-import { TrendingUp } from "lucide-react";
-import { Boxes } from "lucide-react";
-import { SlidersHorizontal } from "lucide-react";
-import { Search } from "lucide-react";
-import { Tag } from "lucide-react";
-import Button from "../components/common/Button";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useMemo, useState } from 'react'
+import { Boxes, Check, ChevronLeft, ChevronRight, Edit3, Eye, Package, Plus, Search, SlidersHorizontal, Star, Trash2, TrendingUp, X } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { toast } from 'react-toastify'
+import { deleteProduct, getProducts } from '../api/products'
+import ConfirmDialog from '../components/common/ConfirmDialog'
+import { filterTeamProducts } from '../components/dashboard/dashboardData'
 
-export default function ProductsListPage() {
-  const [products, setProducts] = useState([]);
-  const [showFilter, setShowFilter] = useState(false);
-  const [search, setSearch] = useState("");
-  const [category, setCategory] = useState("all");
-  const [subcategory, setsubCategory] = useState("");
-  const [lodding, setLodding] = useState(true);
-  
-  console.log(category);
-  useEffect(() => {
-    async function getData() {
-      try {
-        const data = await axios.get(
-          "https://e-commerce-api-3wara.vercel.app/products",
-        );
-        setProducts(data.data.products);
-      } catch (error) {
-        console.log(error.message);
-      } finally {
-        setLodding(false);
-      }
-    }
+const PAGE_SIZE = 8
+const firstDefined = (...values) => values.find((value) => value !== undefined && value !== null && value !== '')
+const getProductsFromResponse = (response) => Array.isArray(response?.data?.products) ? response.data.products : Array.isArray(response?.data) ? response.data : []
+const normalizeProduct = (product) => ({ ...product, id: firstDefined(product?._id, product?.id), name: firstDefined(product?.name, product?.title, 'Unnamed product'), description: firstDefined(product?.shortDescription, product?.description, ''), price: Number(firstDefined(product?.price, 0)), stock: Number(firstDefined(product?.stock, product?.quantity, 0)), category: firstDefined(product?.category, 'Uncategorized'), subcategory: firstDefined(product?.subcategory, ''), tags: Array.isArray(product?.tags) ? product.tags : [], featured: Boolean(firstDefined(product?.featured, false)), images: Array.isArray(product?.images) ? product.images : [] })
+const imageUrl = (image) => typeof image === 'string' ? image : firstDefined(image?.url, image?.secure_url)
+const formatCurrency = (value) => `$${Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
-    getData();
-  }, []);
-
-  console.log(products);
-
-  const inStock = products.filter((product) => product.stock > 0).length;
-  const outStock = products.filter((product) => product.stock === 0).length;
-
-  const featured = products.filter(
-    (product) => product.featured === true,
-  ).length;
-  const total = products.length;
-
-  const arr = [
-    {
-      icon: <Package2 />,
-      num: total,
-      text: "Total",
-    },
-    {
-      icon: <Star />,
-      num: featured,
-      text: "Featured",
-    },
-    {
-      icon: <TrendingUp />,
-      num: inStock,
-      text: "In Stock",
-    },
-    {
-      icon: <Boxes />,
-      num: outStock,
-      text: "Out of Stock",
-    },
-  ];
-  function handlefilter() {
-    setShowFilter(!showFilter);
-  }
-
-  const filterProducts = products.filter((product) => {
-    if (!product.name.toLowerCase().includes(search.toLowerCase())) {
-      return false;
-    }
-
-    if (category !== "all") {
-      if (product.category !== category) {
-        return false;
-      }
-    }
-    if (
-      !product.subcategory.toLowerCase().includes(subcategory.toLowerCase())
-    ) {
-      return false;
-    }
-    return true;
-  });
-
-
-  return (
-    <div className="bg-gray-100 m-10 border border-amber-300">
-      <div className="flex flex-col m-10">
-        {lodding ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="loader"></div>
-          </div>
-        ) : (
-          <AddProductButton />
-        )}
-
-        <div className="grid gap-4 grid-cols-2 md:grid-cols-4 mb-10">
-          {arr.map((item, index) => {
-            return (
-              <div
-                key={index}
-                className="border flex flex-col gap-2 px-6 py-8 rounded-2xl"
-              >
-                <div>{item.icon}</div>
-                <div>
-                  <p>{item.num}</p>
-                  <p>{item.text}</p>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        <div className="border p-4 rounded-2xl">
-          <div className="grid grid-cols-12 gap-4 ">
-            <div className="col-span-12 sm:col-span-7 relative">
-              <Search
-                size={25}
-                className="absolute pl-2 top-1/2 left-1 opacity-30  -translate-y-1/2"
-              />
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search Products"
-                className="border w-full p-2 rounded-lg pl-8 "
-              />
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-4 md:gap-4 col-span-12 sm:col-span-5 ">
-              <Button
-                onClick={handlefilter}
-                className="bg-blue-400 p-2 cursor-pointer rounded-lg flex justify-center items-center gap-1 md:gap-2 sm:flex-1 "
-              >
-                <span>
-                  <SlidersHorizontal size={15} className="text-sm" />
-                </span>
-                <span className="text-xlg">Filter</span>
-              </Button>
-              <Button className="bg-blue-400 p-2 cursor-pointer flex-1 rounded-lg flex justify-center items-center gap-1 sm:flex-1">
-                <span>
-                  <Search size={15} />
-                </span>
-                <span>Search</span>
-              </Button>
-            </div>
-          </div>
-
-          <div className={`${showFilter ? "block" : "hidden"} mt-4`}>
-            <hr></hr>
-
-            <div className="grid grid-cols-12 gap-4 py-4 w-full">
-              <div className="flex flex-col col-span-12 sm:col-span-6 gap-2 w-full">
-                <div className="flex gap-2 items-center">
-                  <Boxes size={15} />
-                  <p>Category</p>
-                </div>
-
-                <select
-                  className="w-full border p-2 rounded-lg"
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                >
-                  <option value="all">All</option>
-                  <option value="electronics">Electronics</option>
-                  <option value="Phones">Phones</option>
-                  <option value="Fashion">Fashion</option>
-                  <option value="Home">Home</option>
-                  <option value="Beauty">Beauty</option>
-                  <option value="Sports">Sports</option>
-                </select>
-              </div>
-
-              <div className="flex flex-col col-span-12 sm:col-span-6 gap-2">
-                <div className="flex gap-2 items-center">
-                  <Tag size={15} />
-                  <p>Category</p>
-                </div>
-
-                <input
-                  value={subcategory}
-                  onChange={(e) => setsubCategory(e)}
-                  placeholder="e.g SmartPhones"
-                  className="w-full border p-2 rounded-lg"
-                />
-              </div>
-              {/* / */}
-            </div>
-          </div>
-        </div>
-
-        {/* 
-         {lodding ? (
-        <div className="flex justify-center items-center h-64">
-          <div className="w-10 h-10 border-4 border-gray-300 border-t-blue-500 rounded-full animate-spin"></div>
-        </div>
-      ) : (
-        // <div>ss</div>
-
-        <ProductTable products={filterProducts} />
-      )} */}
-        {lodding ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="loader"></div>
-          </div>
-        ) : (
-          <ProductTable products={filterProducts} setProducts={setProducts} />
-        )}
-      </div>
-    </div>
-  );
+function ProductCard({ product, onDelete, onQuickEdit = (item) => window.dispatchEvent(new CustomEvent('quick-edit-product', { detail: item })) }) {
+  const navigate = useNavigate()
+  const [imageFailed, setImageFailed] = useState(false)
+  const [imageIndex, setImageIndex] = useState(0)
+  const images = product.images.map(imageUrl).filter(Boolean)
+  const source = images[imageIndex]
+  const moveImage = (direction) => setImageIndex((current) => (current + direction + images.length) % images.length)
+  return <article className="product-card"><div className="product-card-image">{source && !imageFailed ? <img className="product-image" key={source} src={source} alt={`${product.name} image ${imageIndex + 1}`} onError={() => setImageFailed(true)} /> : <div className="product-image-placeholder"><Package size={36} /></div>}{images.length > 1 && <><button type="button" className="product-carousel-arrow left" onClick={() => moveImage(-1)} aria-label="Previous product image"><ChevronLeft size={18} /></button><button type="button" className="product-carousel-arrow right" onClick={() => moveImage(1)} aria-label="Next product image"><ChevronRight size={18} /></button><div className="product-carousel-dots">{images.map((image, index) => <button type="button" className={index === imageIndex ? 'active' : ''} key={image} onClick={() => setImageIndex(index)} aria-label={`Show image ${index + 1}`} />)}</div></>}{product.featured && <span className="product-featured"><Star size={13} /> Featured</span>}<span className={`product-stock ${product.stock > 0 ? 'in-stock' : 'out-stock'}`}>{product.stock > 0 ? `${product.stock} in Stock` : 'Out of Stock'}</span></div><div className="product-card-body"><h3>{product.name}</h3><p className="product-category">{product.category}{product.subcategory ? ` · ${product.subcategory}` : ''}</p><p className="product-description">{product.description || 'No description provided.'}</p><strong className="product-price">{formatCurrency(product.price)}</strong><div className="product-card-footer"><span className={`product-status ${product.stock > 0 ? 'in-stock' : 'out-stock'}`}>{product.stock > 0 ? <Check size={14} /> : <X size={14} />}{product.stock > 0 ? 'In Stock' : 'Out of Stock'}</span><div className="product-actions"><div className="product-primary-actions"><button type="button" className="product-view-action" title="View product" aria-label="View product" onClick={() => navigate(`/dashboard/products/${product.id}/view`)}><Eye size={16} /></button><button type="button" className="product-edit-action" title="Edit product" aria-label="Edit product" onClick={() => navigate(`/dashboard/products/${product.id}/edit`)}><Edit3 size={16} /></button><button type="button" className="product-quick-edit-action" title="Quick edit product" aria-label="Quick edit product" onClick={() => onQuickEdit(product)}><SlidersHorizontal size={16} /></button></div><button type="button" className="product-delete-action" title="Delete product" aria-label="Delete product" onClick={() => onDelete(product)}><Trash2 size={16} /></button></div></div></div></article>
 }
 
-function AddProductButton() {
-    const navigate = useNavigate()
-  return (
-    <div className="flex flex-col gap-4 md:gap-0 md:flex-row md:justify-between md:items-center p-4 border rounded-2xl mb-10 ">
-      <div className="flex gap-4 items-center">
-        <div className="border p-2 rounded-lg">
-          <Package2 />
-        </div>
-        <div>
-          <p className="[letter-spacing:2px]">Product Dashboard</p>
-          <h1 className="text-3xl font-bold">Products</h1>
-        </div>
-      </div>
+export default function ProductsListPage() {
+  const navigate = useNavigate()
+  const [products, setProducts] = useState([])
+  const [query, setQuery] = useState('')
+  const [category, setCategory] = useState('all')
+  const [stock, setStock] = useState('all')
+  const [featured, setFeatured] = useState('all')
+  const [showFilters, setShowFilters] = useState(false)
+  const [page, setPage] = useState(1)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [deleteTarget, setDeleteTarget] = useState(null)
+  const [deleting, setDeleting] = useState(false)
 
-      <div>
-        <Button className="w-full group flex gap-2 items-center justify-center border rounded-sm py-1.5 px-3" onClick={()=> {navigate("/dashboard/products/add")} }>
-          <span className="inline-block transition-all duration-200 group-hover:rotate-90 text-lg leading-none">
-            <Plus />
-          </span>
-          <span className="inline-block text-sm font-bold">Add Product</span>
-        </Button>
-      </div>
-    </div>
-  );
+  const fetchProducts = async () => { setLoading(true); setError(''); try { const response = await getProducts(); setProducts(filterTeamProducts(getProductsFromResponse(response)).map(normalizeProduct)) } catch (requestError) { setError(requestError.response?.data?.message || 'Unable to load products.') } finally { setLoading(false) } }
+  useEffect(() => { fetchProducts() }, [])
+  useEffect(() => { const refresh = () => fetchProducts(); window.addEventListener('products-refresh', refresh); return () => window.removeEventListener('products-refresh', refresh) }, [])
+  useEffect(() => { setPage(1) }, [query, category, stock, featured])
+
+  const categories = useMemo(() => [...new Set(products.map((product) => product.category))].sort(), [products])
+  const filteredProducts = useMemo(() => products.filter((product) => { const searchable = `${product.name} ${product.category} ${product.subcategory} ${product.sku || ''}`.toLowerCase(); if (query && !searchable.includes(query.toLowerCase())) return false; if (category !== 'all' && product.category !== category) return false; if (stock === 'in' && product.stock <= 0) return false; if (stock === 'out' && product.stock > 0) return false; if (featured === 'yes' && !product.featured) return false; if (featured === 'no' && product.featured) return false; return true }), [products, query, category, stock, featured])
+  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / PAGE_SIZE))
+  const visibleProducts = filteredProducts.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+  const removeProduct = async () => { if (!deleteTarget) return; setDeleting(true); try { await deleteProduct(deleteTarget.id); setProducts((current) => current.filter((product) => product.id !== deleteTarget.id)); setDeleteTarget(null); toast.success('Product deleted successfully.') } catch (requestError) { toast.error(requestError.response?.data?.message || 'Unable to delete this product.') } finally { setDeleting(false) } }
+
+  return <div className="products-page"><section className="products-header"><div className="products-header-copy"><div className="products-header-icon"><Package size={25} /></div><div><p className="eyebrow">PRODUCT DASHBOARD</p><h1>Products</h1><p>Manage your store products, track inventory and boost your sales.</p></div></div><button className="add-product-button" type="button" onClick={() => navigate('/dashboard/products/add')}><Plus size={20} /> Add Product</button></section>{loading ? <div className="products-state">Loading products...</div> : error ? <div className="products-state products-error"><p>{error}</p><button type="button" onClick={fetchProducts}>Try Again</button></div> : <><section className="product-stats-grid"><article><span><Boxes size={21} /></span><div><strong>{products.length}</strong><small>Total</small></div></article><article><span><Star size={21} /></span><div><strong>{products.filter((product) => product.featured).length}</strong><small>Featured</small></div></article><article><span><TrendingUp size={21} /></span><div><strong>{products.filter((product) => product.stock > 0).length}</strong><small>In Stock</small></div></article><article><span><Boxes size={21} /></span><div><strong>{products.filter((product) => product.stock <= 0).length}</strong><small>Out of Stock</small></div></article></section><section className="products-search-panel"><div className="products-search-row"><label className="products-search-input"><Search size={20} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search products..." aria-label="Search products" /></label><button className="products-filter-button" type="button" onClick={() => setShowFilters((value) => !value)}><SlidersHorizontal size={18} /> Filters</button><button className="products-search-button" type="button" onClick={() => setQuery(query.trim())}><Search size={18} /> Search</button></div>{showFilters && <div className="products-filters"><label>Category<select value={category} onChange={(event) => setCategory(event.target.value)}><option value="all">All categories</option>{categories.map((item) => <option value={item} key={item}>{item}</option>)}</select></label><label>Stock<select value={stock} onChange={(event) => setStock(event.target.value)}><option value="all">All stock</option><option value="in">In stock</option><option value="out">Out of stock</option></select></label><label>Featured<select value={featured} onChange={(event) => setFeatured(event.target.value)}><option value="all">All products</option><option value="yes">Featured</option><option value="no">Not featured</option></select></label></div>}</section>{visibleProducts.length ? <><section className="products-grid">{visibleProducts.map((product) => <ProductCard key={product.id} product={product} onDelete={setDeleteTarget} />)}</section><div className="products-pagination"><span>Page {page} of {totalPages}</span><div><button type="button" disabled={page === 1} onClick={() => setPage((value) => value - 1)}>Previous</button><button type="button" disabled={page === totalPages} onClick={() => setPage((value) => value + 1)}>Next</button></div></div></> : <div className="products-state"><p>{query || category !== 'all' || stock !== 'all' || featured !== 'all' ? 'No products match your search or filters.' : 'No products found.'}</p></div>}</>}{deleteTarget && <ConfirmDialog isOpen title="Delete product" message={`Are you sure you want to delete ${deleteTarget.name}?`} confirmText="Delete" loading={deleting} onCancel={() => setDeleteTarget(null)} onConfirm={removeProduct} />}</div>
 }

@@ -1,0 +1,4 @@
+import React from 'react'
+import { Box } from 'lucide-react'
+const formatCurrency = (value) => `$${Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+export default function TopProducts({ products }) { return <section className="surface-panel products-panel"><div className="section-heading"><div><p className="eyebrow">TOP PRODUCTS</p><h2>Best sellers</h2></div></div><div className="product-list">{products.slice(0, 5).map((product, index) => <div className="product-row" key={product.id || product.name}><div className={`product-thumb product-tone-${index % 5}`}><Box size={25} /></div><div className="product-copy"><strong>{product.name}</strong><span>{product.quantity} units sold <b>·</b> {formatCurrency(product.price)}</span></div></div>)}</div></section> }

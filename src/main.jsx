@@ -7,6 +7,8 @@ import './index.css'
 import App from './App'
 import  {AuthProvider}  from './context/AuthContext'
 
+document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'light')
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>

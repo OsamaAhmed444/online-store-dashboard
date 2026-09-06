@@ -1,0 +1,184 @@
+Online Store Dashboard - Fix Notes
+
+Date: 2026-09-06
+
+What was fixed:
+- Removed unresolved Git merge-conflict markers from the source files.
+- Resolved duplicate and conflicting route imports in src/App.jsx.
+- Fixed AuthContext.jsx syntax and duplicate closing braces.
+- Resolved API conflicts in axios.js, products.js, and users.js.
+- Consolidated the Button and Spinner components after the merge conflict.
+- Preserved the dashboard layout with Sidebar, Topbar, and routed pages.
+- Fixed the OrderStatusBadge export mismatch by adding a named export while keeping the default export.
+- Implemented the missing ViewProductPage component so its route no longer causes a runtime blank page.
+- Confirmed lucide-react dependencies are installed and available.
+- Added a branded public/favicon.svg and linked it from index.html.
+- Adjusted the login page for short desktop viewports so lower controls remain visible or scrollable at 100% zoom.
+- Added password-reset OTP API helpers for `/auth/forgot-password/send-otp` and `/auth/forgot-password/verify-otp`.
+- Connected the login page's Forgot password action to a two-step OTP reset modal with email, OTP, and new-password fields.
+- Added validation, loading states, success messages, and API error handling for the OTP flow.
+- Restricted product cards, dashboard calculations, and order results to products whose subcategory or tags match `team-1-product`.
+- Centralized team-1 product/order filtering so unrelated products do not appear or contribute to totals.
+
+Date: 2026-09-06 (session 2) — Orders, Carts, Settings
+
+What was fixed/built:
+- OrdersTable, Modal, and (indirectly used) ProductForm were stub placeholders rendering nothing (`<div>OrdersTable</div>` etc.). Implemented OrdersTable and Modal for real; ProductForm is unused dead code (AddProductPage has its own inline form) so it was left alone.
+- OrderStatusBadge used dynamic Tailwind class names (`bg-${color}-100`) that Tailwind can never generate at build time, so status badges had no color at all. Rewrote it to use the existing `.status-badge` CSS system.
+- Fixed a CSS bug where pending/processing/confirmed/shipped/delivered orders all rendered with the exact same green badge (only "cancelled" had its own color). Each status now has a distinct color, including "returned" which had no style at all.
+- Rebuilt /dashboard/orders (OrdersListPage): it was calling `axios.get` directly (bypassing the app's configured `api` instance/interceptor) with an Authorization header built from `user?.token`, a field that never exists on the user object (token is stored separately in AuthContext) — so every request went out unauthenticated. Now uses `getOrdersAdmin()` / `getProducts()`. Added search, status filter, date-range filter, stats cards, and pagination, and switched the page from a mismatched light Tailwind theme to the app's real dark/orange design system (same pattern as Products/Users pages).
+- Orders are now filtered to only the current team's orders: an order is included only if at least one line item's product has subcategory or tags equal to "team-1-product" (same convention already used in components/charts/RevenueLineChart.jsx).
+- Rebuilt /dashboard/carts (CartsViewPage): it rendered hardcoded mock data and was never added to App.jsx's routes, so the Sidebar's "Carts" link went nowhere (fell through to the catch-all redirect). Added the route, wired it to the real `getCarts()` API, matched the dark theme, and added a "View" modal listing cart items.
+- Added /dashboard/settings: the Sidebar already linked to it but the page and route never existed. Built a Profile Information card and a Security (change password) card wired to the real users API (`updateUser`).
+- Fixed the shared Modal component (`common/Modal.jsx`) — it was a `<div>Modal</div>` stub that ignored isOpen/onClose/children entirely, so anything using it (e.g. the unused OrderDetailModal) was broken. It's now a real dialog and is used by the new Carts "view" modal.
+- Fixed the shared Button component: it emitted classes like `btn btn-primary btn-md`, but no CSS for `.btn`/`.btn-primary`/etc. existed anywhere except deep inside the product-create page's form, so Button rendered unstyled everywhere else. Added base button styles.
+- Changed the Category field on the Add/Edit Product form from free text to a `<select>` populated from existing product categories, with an "Add new category" option that reveals a text field when a genuinely new category is needed.
+- Added `setUser` to AuthContext so saving profile changes on the Settings page updates the logged-in session (Topbar, etc.) immediately instead of only the local form.
+
+Verification (session 2):
+- `npm run build` completes successfully after all changes.
+- /dashboard/orders, /dashboard/carts, /dashboard/settings all serve correctly instead of falling through to the catch-all redirect.
+- Could not verify the authenticated dashboard UI visually in a real browser from this session — no test/admin credentials are available in the repo and the app talks to the live production API, so login could not be completed here. Please review the three pages in your own logged-in browser session; the running dev server on :5173 should already show these changes via hot reload.
+
+Verification:
+- Repository-wide merge-marker scan is clean.
+- npm run build completes successfully.
+- Browser reload renders the login page without runtime errors.
+- Sign In and Secure Admin Access are visible after the login layout adjustment.
+- Browser reports /favicon.svg as the active favicon.
+- npm run build passes after the OTP integration.
+- npm run build passes after the team-1 filtering update.
+- Fixed product creation 500 errors by encoding multipart `tags` as the API-required JSON array string.
+- Added client-side validation requiring at least one image for new products, matching the deployed API contract.
+- Removed nonessential explanatory, debug, and placeholder comments from source files.
+- Fixed normal-zoom horizontal overflow by constraining the document shell, dashboard pages, grids, and topbar flex content.
+- Confirmed the layout and comment cleanup with a successful production build.
+- Fixed product upload "Unexpected field" errors by enforcing the API's five-image limit before sending multipart data.
+- Corrected multipart tag encoding after API validation: tags are sent as repeated fields so the backend receives an array.
+- Replaced product card action text with icon-only View, Edit, Quick Edit, and Delete buttons with accessible labels and tooltips.
+- Wired the topbar theme button to persistent light/dark mode using `data-theme` and localStorage.
+- Added a working notifications popover that loads pending-order notifications from the admin orders API.
+- Verified the theme and notification changes with a successful production build.
+- Improved light-mode sidebar contrast for brand text, navigation labels/icons, active state, and API status text.
+- Fixed remaining dark elements in light mode across tables, modals, inputs, settings, carts, orders, product rows, and secondary buttons.
+- Overrode dark Tailwind slate utilities in order detail pages and modals so they follow light mode instead of rendering black panels.
+- Removed OS-dependent `dark:` Tailwind variants from chart components and added a final light-mode fallback for remaining dark utility backgrounds.
+- Fixed black page-specific surfaces in Users, Products, Add/Edit, Orders, and Carts light mode.
+- Made QuickEditProductPage functional by reusing the working product edit form with the route product ID.
+- Removed the READY callout from the add-product page header.
+- Added a visible shared loading screen and spinner styling for product loading states.
+- Fixed remaining light-mode cards by changing stat/state card backgrounds to white and overriding inherited white text with dark text.
+- Improved the main dashboard hierarchy with stronger hero/stat spacing, responsive tracks, panel elevation, and hover states for cards, status items, products, and orders.
+- Fixed the add-product gallery light-mode placeholder and upload dropzone colors, and removed the oversized empty uploader spacing.
+- Changed the purple Quick Edit product action to open an in-page modal for price, stock, and featured updates.
+- Added a multi-image product-card carousel with arrows and dots.
+- Made Quick Edit reuse the full product editor inside a large modal and set the application default theme to light mode.
+- Updated the topbar account chip to show the authenticated user's real name, initials, and role.
+- React Router only reports non-blocking future-flag warnings.
+
+Date: 2026-09-06 (session 3) — Product Details page + Edit Product modal
+
+Context: no design PDF/image file actually reached this session (only a detailed text brief describing the two screens), so the existing dark/orange design system already in index.css was kept rather than introducing a clashing cyan/blue palette. All changes reuse the existing API layer (api/products.js), AuthContext, and shared components (Modal, Button, Spinner, ImageUploader) — no new API endpoints, no fake data, no parallel auth.
+
+What was found:
+- ViewProductPage.jsx (route /dashboard/products/:id/view) already existed as a working, fully API-driven Product Details page with a real getProductById call, loading/error states, and an image gallery — it just lacked prev/next arrows, carousel indicators, and a clearer sectioned layout for price/discount/stock/SKU/brand/tags.
+- The "Edit Product modal" already existed too: App.jsx's QuickEditModalHost listens for a `quick-edit-product` window event (dispatched from the Products list "Quick Edit" button) and renders the existing AddProductPage form (which already supports both create and edit via a productId/onClose prop) inside the shared Modal component with a wide `.full-product-edit-modal` layout. It already fetched the real product, populated every field/tag/image from the API, supported adding/removing images, and called the real updateProduct (PATCH /products/update/:id) on save, refreshing the list via a `products-refresh` event.
+- ProductsListPage.jsx had a second, half-built quick-edit mechanism (quickEditTarget/quickEditForm/saveQuickEdit calling updateProduct directly) whose modal UI was never actually rendered anywhere — pure dead state left over from an earlier session.
+
+What was changed:
+- ViewProductPage.jsx: added left/right navigation arrows and dot indicators to the main product image (only when there is more than one image), and restructured the right column into distinct rounded info cards — Overview/Description, Price + Discount + Stock, Product Information (SKU/Brand/Category/Subcategory/Active), and Tags — instead of one flat block. All values still come straight from the real API response with the same graceful fallbacks as before (name||title, description||shortDescription, stock||quantity, etc.).
+- index.css: added `.product-detail-nav-arrow`, `.product-detail-indicators`, and `.product-detail-info-card`/`.product-detail-pricing` rules (dark theme + light-theme overrides) for the above, reusing the app's existing color tokens.
+- AddProductPage.jsx (the component behind both the full Add/Edit pages and the Edit Product modal): replaced the plain Featured/Active checkboxes with proper toggle buttons (Featured/Active), which better match "status control" styling and are driven by the same form state that's already populated from and submitted to the real API. Updated the gallery section copy to say "Product Gallery" and clarify that existing images are shown and can be removed/added to, when in edit mode.
+- index.css: added `.status-toggle-button` styles for the new toggle buttons and made `.product-toggles` wrap on narrow screens.
+- ProductsListPage.jsx: removed the dead, never-rendered quickEditTarget/quickEditForm/quickEditSaving state and its unused updateProduct/Modal imports, since the working Edit Product modal is the one in App.jsx/QuickEditModalHost — this avoids two competing, out-of-sync "quick edit" implementations touching the same API.
+
+Verification:
+- `npm run build` completes successfully after all changes.
+- Started the Vite dev server and confirmed it boots without errors; could not click through the authenticated dashboard UI in a real browser from this session because no admin credentials are available here and the app talks to the live production API (same limitation noted in session 2) — please review the Product Details page and the Products list's "Quick Edit"/"Edit" actions in your own logged-in browser; the dev server picks up these changes via hot reload.
+- No API endpoints, field names, or auth handling were changed — only presentation/markup around the existing getProductById/updateProduct calls.
+
+Date: 2026-09-06 (session 4) — Products page light-mode text + dashboard revenue chart
+
+What was fixed:
+- Found the actual cause of "white text in light mode" on the Products page: `.product-price` and `.product-stats-grid strong` had no `[data-theme="light"]` override, so they kept their near-white dark-mode color (#f3f4f5/#f4f4f5) while their parent cards (`.product-card`, `.product-stats-grid article`) do get a white background in light mode — making the price on every product card and the Total/Featured/In Stock/Out of Stock numbers invisible. Added light-mode color overrides for both.
+- Found a selector-name bug causing the same class of problem for the category/stock filter dropdowns: the CSS light-mode rules targeted `.products-filter-select` and `.products-filters-panel`, but the real markup in ProductsListPage.jsx uses `.products-filters select` and `.products-filters` — so those overrides never matched anything and the filter `<select>` elements stayed dark-styled inside the white search panel. Corrected the selectors so light mode now actually applies.
+- Also darkened the Products header subtitle ("Manage your store products...") and the stat-card small labels, which were low-contrast gray-on-white.
+
+What was added:
+- A "Revenue (Last 7 days)" line chart on the dashboard home page. `src/components/charts/RevenueLineChart.jsx` existed on disk but was never imported/rendered anywhere, and it also had real bugs: it called `axios.get(...)` directly against the hardcoded production URL (bypassing the app's shared `api` instance and its auth interceptor, the same anti-pattern already fixed elsewhere per session 2 notes), and it filtered on a `category === 'team-1-products'` field/value that doesn't match this app's actual team-scoping convention (`subcategory`/`tags` equal to `team-1-product`, see `dashboardData.js`) or any confirmed API response shape.
+- Rewrote it to take the dashboard's already-fetched, already-normalized `orders` (the same data DashboardHome.jsx already loads via `getOrders`/`getOrdersAdmin` and filters with `filterTeamOrders`) and aggregate real order totals per day for the last 7 days client-side — no new API calls, no guessed response shape, no auth bypass. Shows an EmptyState when there's no revenue in the window instead of an empty chart.
+- Wired it into `DashboardHome.jsx` between the stats grid and the order-status/top-products row, styled with the dashboard's existing `.surface-panel`/`.section-heading` classes so it matches the rest of the page instead of introducing new Tailwind-only styling.
+
+Verification:
+- `npm run build` completes successfully (recharts is now actually included in the bundle since the chart is rendered — expected chunk-size warning only, not an error).
+- Could not visually confirm the chart/light-mode fix in a live authenticated browser session for the same reason as prior sessions (no admin credentials available here, app talks to the live production API) — please verify on your end.
+
+Date: 2026-09-06 (session 5) — Revenue & Sales chart + Top Categories donut, matching provided reference design (in English)
+
+What was built (from a reference screenshot showing an Arabic admin dashboard with a category donut chart + a revenue/sales area chart with 7 Days/30 Days/Year tabs and prev/next arrows):
+- `src/components/charts/TopCategoriesDonut.jsx` (new): a donut chart of top-selling product categories with a percentage/name/color-dot legend below it, matching the reference layout. Category revenue is computed client-side from real data already available to the dashboard — teams' raw products (which carry `category`/`price`) matched against the already-computed sales-quantity-per-product (`calculateProductSales`) — no fabricated categories or hardcoded percentages. Falls back to catalog share (count of products per category) if there are no sales yet, same fallback style already used by `calculateProductSales`. Shows EmptyState when there's no product data.
+- `src/components/charts/RevenueLineChart.jsx` (rewritten again): now titled "Revenue & Sales Chart" with "7 Days / 30 Days / Year" range tabs and circular prev/next arrows to page through earlier periods, rendered as a blue gradient area chart (matching the reference's visual style) instead of a plain line. All ranges aggregate the same real `orders` data the dashboard already loads — no new API calls.
+- `DashboardHome.jsx`: added a `categoryProducts` field to dashboard state (the raw, un-normalized team products, since the existing shared `normalizeProduct` in dashboardData.js strips the `category` field needed by the donut chart — left that shared helper untouched since other pages rely on its current shape). Added a new `.dashboard-insights-row` (donut chart + revenue chart side by side, narrower/wider like the reference) above the existing order-status/top-products row.
+- `index.css`: added `.dashboard-insights-row`, `.categories-*`, `.revenue-range-tabs`, `.revenue-chart-body`, `.revenue-nav-arrow` rules (dark + light theme), reusing the existing `.surface-panel`/`.section-heading` card system so the new charts sit visually consistent with the rest of the dashboard instead of introducing a separate design language.
+- Text/labels are all in English per your request (the reference screenshot itself was in Arabic).
+
+Bug fix — "no revenue although we have order": the chart's default window was always "the last 7 calendar days ending today." If the actual order data isn't from the last week (e.g. older seed/test orders), that window is legitimately empty even though `dashboard.orders.length` (used by the Total Orders stat card) counts orders from all time. Fixed by having the chart look at the most recent order's date on load and auto-select whichever range (7 Days / 30 Days / Year, paging back further in whole-year steps if needed) actually contains it, instead of always assuming "now." The range tabs and prev/next arrows still let you navigate manually afterward, and the empty-state message now hints at using them if a chosen period truly has nothing in it.
+
+Verification:
+- `npm run build` completes successfully.
+- Same limitation as before: no admin credentials available in this environment to click through the live authenticated dashboard, so please verify the two new charts and the "no revenue" fix in your own logged-in browser.
+
+Date: 2026-09-06 (session 6) — Fixed the real "$0.00 revenue" bug + chart polish
+
+Root cause found from a screenshot of the live Orders page: the order's Total column showed $0.00 even though the order clearly existed (Order #8D13B5AF, Sep 6 2026, 1 item) — so the earlier "auto-pick a date range with data" fix in session 5 was solving the wrong problem. The real bug: `normalizeOrder()` in `src/components/dashboard/dashboardData.js` read the order total from `order.total`/`order.totalAmount`/`order.grandTotal`/`order.amount`, but the live API's actual field (confirmed from `OrderDetailPage.jsx`/`OrderDetailModal.jsx`, which already display `order.totalPrice` correctly in their order-summary sections) is `totalPrice`. Since that field was never checked, every order's normalized `total` silently fell back to 0 — affecting the Orders table, Recent Orders, dashboard stats, and the new revenue chart all at once (they all consume `normalizeOrder`'s output).
+- Fix: added `order?.totalPrice` as the first candidate in `normalizeOrder`'s total field lookup. Confirmed this didn't touch the existing team-1-product subcategory/tag filtering (`filterTeamOrders`/`filterTeamProducts`) — that logic is untouched and still applies before totals are computed.
+- Per your screenshot, the chart correctly showed the real revenue spike once this was fixed.
+
+Chart polish (per your follow-up):
+- Removed the prev/next period navigation arrows from the Revenue & Sales chart (`RevenueLineChart.jsx`) and the now-unused `.revenue-nav-arrow`/`.revenue-chart-body` CSS — the range tabs (7 Days/30 Days/Year) remain.
+- Lightened the x-axis/y-axis date and value label color on that chart from `#8b909b` to a softer `#c3c7cd`.
+
+Verification:
+- `npm run build` completes successfully after both changes.
+
+Date: 2026-09-06 (session 7) — Page transition animation on navigation
+
+What was added:
+- `DashboardLayout.jsx` now reads the current route with `useLocation()` and wraps the routed page (`<Outlet/>`) in a `<div className="route-transition" key={location.pathname}>`. Keying by pathname makes React remount that wrapper on every navigation (Dashboard → Products → Orders, etc.), which re-triggers its CSS animation each time.
+- `index.css`: added a `.route-transition` fade + slide-up keyframe animation (`route-fade-in`, 0.32s), applied on every dashboard page change, with a `prefers-reduced-motion: reduce` guard that disables it for users who've asked their OS to reduce motion.
+- Left the sidebar's existing hover/active-state transitions (`.sidebar-link`, already `.2s ease`) as-is since they already animate on interaction — only the page-to-page navigation was missing an animation.
+- No new dependencies added (no framer-motion) — this is a small, dependency-free CSS/React solution scoped to the existing route structure.
+
+Verification:
+- `npm run build` completes successfully.
+
+Date: 2026-09-06 (session 8) — Fixed Users page to match the real API schema (from the live Swagger docs)
+
+You shared the actual API docs (https://e-commerce-api-3wara.vercel.app/api-docs). Rather than going only off the screenshots, fetched the real OpenAPI spec from `/api-docs/swagger.json` to get the exact request schemas, and found the Add/Edit User forms were sending fields the API silently ignores or rejects:
+- `POST /users/add` only accepts `username`, `email`, `password` (required) and `phone` (optional) — no `firstName`/`lastName`/`role`. The Add User form was sending firstName/lastName/role, which the API has no field for at all (the User schema itself only has username/email/phone/avatar/role/addresses/isVerified — there's no name-splitting concept in this API).
+- `PATCH /users/{id}` only accepts `username`, `phone`, `avatar` — no `email`/`password`/`role`. The Edit User form was sending email/password/role, none of which that endpoint can change.
+- Role changes have their own dedicated endpoint: `PATCH /auth/change-role` with body `{ userId, role }` (role is `"admin"` or `"customer"`) — this was never called anywhere in the app.
+- Confirmed, per the spec, there truly is no user-verification endpoint anywhere (only OTP verification during registration/password-reset, not an admin "verify a user" action) — the existing "Verify" button in the Users table only ever showed `toast.error('The API does not provide a user verification endpoint.')` and could never succeed.
+
+What was fixed:
+- `src/api/auth.js`: added `changeRole(userId, role)` calling the real `PATCH /auth/change-role`.
+- `src/pages/UsersListPage.jsx`:
+  - Add User form now only collects/sends `username`, `email`, `password`, `phone` (matching `POST /users/add`).
+  - Edit User form now only collects/sends `username`, `phone`, `avatar` (matching `PATCH /users/{id}`) — email/password/role are no longer offered there since the API can't act on them via that endpoint.
+  - Replaced the dead-end "Verify" button with a real "Promote to admin / Demote to customer" action that calls the new `changeRole` API, behind the same confirm-dialog pattern already used for delete.
+  - `normalizeUser` simplified to stop guessing at `firstName`/`lastName`/`fullName` fields that don't exist in the real User schema, and reads `isVerified` directly (matching the schema) instead of guessing at alternate field names.
+
+Verification:
+- `npm run build` completes successfully.
+- Same limitation as prior sessions — no admin credentials to click through the live authenticated Users page, so please verify Add/Edit/Promote-Demote/Delete users against the real API in your own session.
+
+Date: 2026-09-06 (session 9) — Image carousel animations + chart.txt reference doc
+
+What was added:
+- Product card carousel (`ProductsListPage.jsx`'s `ProductCard`) and the Product Details gallery main image (`ViewProductPage.jsx`) now key their `<img>` on the image URL, so switching images (via arrows, thumbnails, or dots) remounts the `<img>` and replays a short fade+scale-in animation (`.product-image`/`.product-detail-main-image img`, `carousel-image-in` keyframe, ~0.28-0.3s, `prefers-reduced-motion`-aware) instead of the image just snapping to the new source.
+- Carousel arrow buttons (`.product-carousel-arrow`, `.product-detail-nav-arrow`) and thumbnails now have hover/active micro-transitions (slight scale up on hover, scale down on click).
+- Carousel dots/indicators (`.product-carousel-dots`, `.product-detail-indicators`) now animate width/color when the active one changes instead of switching instantly.
+- Created `chart.txt` at the project root, at your request, documenting the two dashboard chart components (`TopCategoriesDonut.jsx` and `RevenueLineChart.jsx`) — full current code plus a plain-English explanation of props, data aggregation logic, and rendering for each, including a note that the "100% phone" you're currently seeing on the categories donut is expected behavior (only one category currently has recorded sales/products), not a bug — it will automatically split once more categories have sales.
+
+Verification:
+- `npm run build` completes successfully.

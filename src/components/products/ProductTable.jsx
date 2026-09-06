@@ -1,16 +1,20 @@
 import React, { useState } from "react";
-// Import Swiper React components
 import { Navigate, useNavigate } from "react-router-dom";
 import { Swiper, SwiperSlide } from "swiper/react";
+// <<<<<<< HEAD
 
 
 // Import Swiper styles
+// =======
+  import { deleteProduct } from "../../api/product.js";
+// >>>>>>> origin/main
 import "swiper/css";
 import "swiper/css/pagination";
 import "swiper/css/navigation";
 import { Autoplay } from "swiper/modules";
 import Button from "../common/Button";
-// import required modules
+
+
 import { Pagination, Navigation } from "swiper/modules";
 import { Eye } from "lucide-react";
 import { Pencil } from "lucide-react";
@@ -29,41 +33,44 @@ const arr = [
   },
 ];
 
-export default function ProductTable({ products, setProducts }) {
+export default function ProductTable({ products, setProducts,lodding,setLodding }) {
 
 
   const navigate = useNavigate()
-  function handleDelete(id) {
-    setProducts(products.filter((pro) => pro._id !== id));
+  const [loading,setLoading]=useState(true)
+
+const handleDelete = async (id) => {
+  try {
+    const response = await deleteProduct(id);
+
+    setProducts((prev) =>
+      prev.filter((product) => product._id !== id)
+    );
+  } catch (error) {
+    console.log("STATUS:", error.response?.status);
+    console.log("URL:", error.config?.url);
+    console.log("AUTH:", error.config?.headers?.Authorization);
+    console.log("ERROR:", error.response?.data);
   }
+};
   return (
     <div className="flex flex-col gap-2">
-      <div className="grid grid-col-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mt-10 gap-4">
+      <div className="grid grid-col-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mt-10 gap-4">
         {products.map((product) => {
           return (
             <div
               key={product._id}
-              className="border rounded-lg overflow-hidden relative border-blue-800"
+              className="border border-[var(--color-border)] rounded-2xl overflow-hidden relative transition-all duration-300 hover:shadow-xl"
             >
-              <button className="absolute top-4 z-10 left-4 bg-amber-500 flex gap-1 items-center justify-center rounded-lg py-1 px-2 cursor-text">
+              <Button className="absolute top-4 z-10 left-4  flex gap-1 items-center justify-center rounded-lg py-1 px-2 cursor-text">
                 <Star size={13} />
                 <span className="text-[11px]" style={{ color: "var(--text)" }}>
                   Featured
                 </span>
-              </button>
+              </Button>
 
-              {/* <div
-                  className="rounded flex gap-1 items-center justify-center absolute top-4 left-4 z-10"
-                  style={{ background: "var(--primary)" }}
-                >
-                  <Star size={15} />
-                  <span className="text-sm" style={{ color: "var(--text)" }}>
-                    Featured
-                  </span>
-                </div> */}
-
-              <div className="border  h-64 overflow-hidden group product border-red-600 relative">
-                <Button className="absolute z-10  bg-amber-500 rounded-xl absolute z-10 right-4 bottom-4 text-[13px] py-1 px-2">
+              <div className="border border-[var(--input)]  h-64 overflow-hidden group product  relative">
+                <Button className="absolute z-10   rounded-xl absolute z-10 right-4 bottom-4 text-[13px] py-1 px-2">
                   {product.stock > 0
                     ? `${product.stock} in Stock`
                     : "Out Of Stock"}
@@ -113,7 +120,7 @@ export default function ProductTable({ products, setProducts }) {
                 <div className="flex gap-2 ml-8 mb-2 ">
                   {product.tags.map((tag) => {
                     return (
-                      <span className="border p-1 rounded-3xl border-[#999] opacity-50 px-2">
+                      <span className="border border-[var(--input)]  p-1 rounded-3xl  opacity-50 px-2">
                         {tag}
                       </span>
                     );
@@ -121,19 +128,19 @@ export default function ProductTable({ products, setProducts }) {
                 </div>
               </div>
 
-              <hr></hr>
+              <hr className=" border border-[var(--color-border)] "></hr>
 
               <div className="mb-2">
                 <div className="flex gap-1 py-2">
                   {arr.map((item) => {
                     return (
                       <button
-                        className="ml-8 flex gap-1 items-center p-1 px-2 rounded-lg bg-gray-300"
+                        className="ml-8 cursor-pointer flex gap-1 items-center p-1 px-2 rounded-lg border border-var(--border) text-[var(--muted)"
                         onClick={() => {
                           if (item.text === "View") {
                           
+                   navigate(`/dashboard/products/${product._id}/view`)
                           
-                            navigate(`/dashboard/products/${product._id}/view`);
                           }
                           else if(item.text === "Edit"){
                               navigate(`/dashboard/products/${product._id}/edit`);
@@ -152,13 +159,13 @@ export default function ProductTable({ products, setProducts }) {
                 </div>
 
                 <div className="flex justify-end">
-                  <Button
-                    className="bg-gray-300 rounded-lg flex gap-1  py-1 px-2 mr-4 text-[11px] cursor-pointer"
+                  <button
+                    className="rounded-lg flex gap-1  py-1 px-2 mr-4 text-[11px] border  cursor-pointer border-[var(--error)] text-[var(--error)] hover:opacity-80"
                     onClick={() => handleDelete(product._id)}
                   >
-                    <Trash2 size={15} />
+                    <Trash2  size={15} />
                     <span>Delete</span>
-                  </Button>
+                  </button>
                 </div>
               </div>
             </div>
@@ -168,4 +175,3 @@ export default function ProductTable({ products, setProducts }) {
     </div>
   );
 }
-

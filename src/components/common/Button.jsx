@@ -1,25 +1,43 @@
-function Button({
-  type,
-  onClick,
-  className,
-  disabled,
-  loading,
-  children,
-  ...props
-}) {
-  const bestStyles =
-    "px-6 py-2 text-[#FFF7ED] rounded-lg bg-[#F97316] hover:bg-[#F8923C] focus:ring-1 focus:ring-[#FFEDD5] disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-300 cursor-pointer capitalize";
-  return (
-    <button
-      type={type ? type : "button"}
-      onClick={onClick}
-      className={`${bestStyles} ${className ? className : ""}  `}
-      disabled={disabled || loading}
-      {...props}
-    >
-      {loading ? "Loading..." : children}
-    </button>
-  );
+import React from 'react'
+
+import Spinner from './Spinner'
+
+const VARIANT_CLASSES = {
+  primary: 'btn-primary',
+  secondary: 'btn-secondary',
+  danger: 'btn-danger',
+  outline: 'btn-outline',
+  ghost: 'btn-ghost',
+  link: 'btn-link',
 }
 
-export default Button;
+const SIZE_CLASSES = {
+  sm: 'btn-sm',
+  md: 'btn-md',
+  lg: 'btn-lg',
+}
+
+export default function Button({
+  variant = 'primary',
+  size = 'md',
+  loading = false,
+  disabled = false,
+  className = '',
+  children,
+  type = 'button',
+  ...props
+}) {
+  return (
+    <button
+      type={type}
+      disabled={disabled || loading}
+      className={['btn', VARIANT_CLASSES[variant], SIZE_CLASSES[size], className]
+        .filter(Boolean)
+        .join(' ')}
+      {...props}
+    >
+      {loading && <Spinner size="sm" />}
+      {children}
+    </button>
+  )
+}

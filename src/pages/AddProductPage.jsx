@@ -1,588 +1,161 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { addProduct } from "../api/product";
+import React, { useEffect, useRef, useState } from 'react'
+import { ArrowLeft, CheckCircle2, ImagePlus, Package, Save, Sparkles, Star } from 'lucide-react'
+import { useNavigate, useParams } from 'react-router-dom'
+import { toast } from 'react-toastify'
+import { addProduct, getProductById, getProducts, updateProduct } from '../api/products'
+import Button from '../components/common/Button'
+import ImageUploader from '../components/products/ImageUploader'
+import { LoadingScreen } from '../components/common/Spinner'
 
-import {
-  ImagePlus,
-  Upload,
-  Sparkles,
-} from "lucide-react";
+const initialForm = { name: '', shortDescription: '', description: '', price: '', discountPrice: '', stock: '', sku: '', category: '', subcategory: '', brand: '', featured: false, active: true }
 
-export default function AddProductPage() {
-  const navigate = useNavigate();
-  const [images, setImages] = useState([]);
-  const [previewImages, setPreviewImages] = useState([]);
+function validate(form) {
+  const errors = {}
+  if (!form.name.trim()) errors.name = 'Product name is required.'
+  if (form.shortDescription.trim().length < 10) errors.shortDescription = 'Use at least 10 characters.'
+  if (form.description.trim().length < 20) errors.description = 'Use at least 20 characters.'
+  if (form.price === '' || Number(form.price) <= 0) errors.price = 'Price must be greater than zero.'
+  if (form.stock === '' || Number(form.stock) < 0) errors.stock = 'Stock cannot be negative.'
+  if (!form.category.trim()) errors.category = 'Category is required.'
+  return errors
+}
 
-  const [formData, setFormData] = useState({
-    name: "",
-    shortDescription: "",
-    description: "",
-    price: "",
-    discountPrice: "",
-    stock: "",
-    sku: "",
-    category: "",
-    subcategory: "",
-    brand: "",
-    featured: false,
-  });
+export default function AddProductPage({ productId, onClose }) {
+  const navigate = useNavigate()
+  const { id: routeId } = useParams()
+  const id = productId || routeId
+  const isEditMode = Boolean(id)
+  const [form, setForm] = useState(initialForm)
+  const [categories, setCategories] = useState([])
+  const [customCategory, setCustomCategory] = useState(false)
+  const [tags, setTags] = useState([])
+  const [tagDraft, setTagDraft] = useState('')
+  const [images, setImages] = useState([])
+  const [previews, setPreviews] = useState([])
+  const [errors, setErrors] = useState({})
+  const [apiError, setApiError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [dirty, setDirty] = useState(false)
+  const [loadingProduct, setLoadingProduct] = useState(isEditMode)
+  const previewsRef = useRef(previews)
 
-  // Handle inputs
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
+  previewsRef.current = previews
+  useEffect(() => () => previewsRef.current.forEach((preview) => URL.revokeObjectURL(preview.url)), [])
 
+  useEffect(() => {
+    let mounted = true
+    getProducts()
+      .then((response) => {
+        if (!mounted) return
+        const products = Array.isArray(response.data?.products) ? response.data.products : Array.isArray(response.data) ? response.data : []
+        setCategories([...new Set(products.map((product) => product.category).filter(Boolean))].sort())
+      })
+      .catch(() => { })
+    return () => { mounted = false }
+  }, [])
 
-    setFormData({
-      ...formData,
-      [name]: type === "checkbox" ? checked : value,
-    });
-  };
+  useEffect(() => {
+    if (!isEditMode) return
+    let mounted = true
+    getProductById(id)
+      .then((response) => {
+        if (!mounted) return
+        const product = response.data?.product || response.data?.data || response.data
+        if (!product || typeof product !== 'object') throw new Error('Product details were not returned by the API.')
+        setForm({
+          name: product.name || '', shortDescription: product.shortDescription || '', description: product.description || '',
+          price: product.price ?? '', discountPrice: product.discountPrice ?? '', stock: product.stock ?? '', sku: product.sku || '',
+          category: product.category || '', subcategory: product.subcategory || '', brand: product.brand || '', featured: Boolean(product.featured), active: product.isActive !== false,
+        })
+        setTags(Array.isArray(product.tags) ? product.tags : [])
+        const existingImages = Array.isArray(product.images) ? product.images.map((image, index) => ({ existing: true, file: { name: `existing-image-${index + 1}` }, url: typeof image === 'string' ? image : image.url })) : []
+        setPreviews(existingImages)
+      })
+      .catch((requestError) => { if (mounted) setApiError(requestError.response?.data?.message || 'Unable to load product details.') })
+      .finally(() => { if (mounted) setLoadingProduct(false) })
+    return () => { mounted = false }
+  }, [id, isEditMode])
 
-  // Submit form
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-  
-  try {
-    const data = new FormData();
-
-    data.append("name", formData.name);
-    data.append("shortDescription", formData.shortDescription);
-    data.append("description", formData.description);
-    data.append("price", formData.price);
-    data.append("discountPrice", formData.discountPrice);
-    data.append("stock", formData.stock);
-    data.append("sku", formData.sku);
-    data.append("category", formData.category);
-    data.append("subcategory", formData.subcategory);
-    data.append("brand", formData.brand);
-    data.append("featured", formData.featured);
-
-    images.forEach((image) => {
-      data.append("images", image);
-    });
-
-//     console.log("NUMBER OF IMAGES:", images.length);
-
-// images.forEach((image) => {
-//   console.log("IMAGE:", image.name, image.type, image.size);
-// });
-
-    const response = await addProduct(data);
-
-    console.log("Product added:", response.data);
-
-    navigate(-1);
-
-  } catch (error) {
-    console.log("STATUS:", error.response?.status);
-    console.log("BACKEND ERROR:", error.response?.data);
+  const updateField = (event) => {
+    const { name, value, type, checked } = event.target
+    setForm((previous) => ({ ...previous, [name]: type === 'checkbox' ? checked : value }))
+    setDirty(true)
+    if (errors[name]) setErrors((previous) => ({ ...previous, [name]: '' }))
   }
-  };
 
-  // Cancel
-  const handleCancel = () => {
-    navigate(-1);
-  };
-
-  return (
-    <div className="m-10 flex flex-col gap-8">
-
-      {/* ================= HEADER ================= */}
-      <div className="border rounded-lg p-4 flex items-end justify-between">
-
-        <div className="flex flex-col gap-4">
-
-          {/* Back Button */}
-          <div>
-            <button
-              type="button"
-              className="bg-amber-600 cursor-pointer text-white rounded-lg py-1 px-2"
-              onClick={() => navigate(-1)}
-            >
-              Back to products
-            </button>
-          </div>
-
-          {/* Title */}
-          <div className="flex gap-4 items-center">
-
-            <div className="bg-cyan-100 text-cyan-500 p-3 rounded-2xl">
-              <ImagePlus size={25} />
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <p className="tracking-widest">
-                Create Product
-              </p>
-
-              <h2 className="text-2xl font-bold">
-                Launch a polished product entry
-              </h2>
-            </div>
-
-          </div>
-
-          <p>
-            Add products with validation, image previews,
-            multi-upload support, and smooth UX.
-          </p>
-
-        </div>
-
-        {/* Ready Box */}
-        <div className="p-2 border flex flex-col gap-2 rounded-lg">
-          <p className="tracking-widest">
-            Ready
-          </p>
-
-          <p>
-            Create, validate, and save with one click.
-          </p>
-        </div>
-
-      </div>
-
-
-      {/* ================= MAIN ================= */}
-      <div className="grid grid-cols-12 gap-6">
-
-
-        {/* ================================================= */}
-        {/* LEFT - GALLERY */}
-        {/* ================================================= */}
-
-        <div className="col-span-12 lg:col-span-5 border rounded-3xl bg-white p-6">
-
-          {/* Gallery Header */}
-          <div className="flex items-center gap-3 mb-6">
-
-            <div className="bg-cyan-100 text-cyan-500 p-3 rounded-2xl">
-              <ImagePlus size={25} />
-            </div>
-
-            <div>
-              <h2 className="text-xl font-bold">
-                Gallery
-              </h2>
-
-              <p className="text-sm text-gray-500">
-                Upload multiple images and preview instantly.
-              </p>
-            </div>
-
-          </div>
-
-
-          {/* Image Preview */}
-          {/* <div className="border rounded-3xl overflow-hidden w-full max-w-sm"> */}
-
-          {previewImages.length > 0 ? (
-  <div className="grid grid-cols-2 gap-4">
-    {previewImages.map((image, index) => (
-      <div
-        key={index}
-        className="border rounded-3xl overflow-hidden"
-      >
-        <img
-          src={image}
-          alt={`Product ${index + 1}`}
-          className="w-full h-64 object-cover"
-        />
-
-        <div className="px-4 py-3">
-          <p className="text-xs tracking-[4px] text-gray-400">
-            IMAGE {index + 1}
-          </p>
-        </div>
-      </div>
-    ))}
-  </div>
-) : (
-  <div className="border rounded-3xl overflow-hidden w-full max-w-sm">
-    <img
-      src="https://images.unsplash.com/photo-1592899677977-9c10ca588bbd?w=600"
-      alt="Product"
-      className="w-full h-64 object-cover"
-    />
-
-    <div className="px-4 py-3">
-      <p className="text-xs tracking-[4px] text-gray-400">
-        IMAGE 1
-      </p>
-    </div>
-  </div>
-)}
-{/* 
-            <div className="px-4 py-3">
-              <p className="text-xs tracking-[4px] text-gray-400">
-                IMAGE 1
-              </p>
-            </div> */}
-
-          {/* </div> */}
-
-
-          {/* Upload Box */}
-          <div className="mt-6">
-
-            <label
-              htmlFor="images"
-              className="border-2 border-dashed border-cyan-200 bg-cyan-50/40 rounded-3xl h-40 flex flex-col justify-center items-center text-center cursor-pointer hover:bg-cyan-50 transition"
-            >
-
-              <Upload
-                size={28}
-                className="text-cyan-400 mb-3"
-              />
-
-              <p className="font-semibold text-gray-700">
-                Upload images
-              </p>
-
-              <p className="text-sm text-gray-500 mt-1">
-                PNG, JPG, WEBP • multiple files supported
-              </p>
-
-            </label>
-
-            <input
-              id="images"
-              type="file"
-              accept="image/png,image/jpeg,image/webp"
-              multiple
-              className="hidden"
-          onChange={(e) => {
-  const files = Array.from(e.target.files);
-
-  setImages(files);
-
-  const previews = files.map((file) =>
-    URL.createObjectURL(file)
-  );
-
-  setPreviewImages(previews);
-}}
-            />
-
-          </div>
-
-
-          {/* UX Box */}
-          <div className="mt-6 border border-emerald-100 bg-emerald-50/40 rounded-3xl p-5">
-
-            <div className="flex gap-2 items-center text-emerald-500">
-
-              <Sparkles size={18} />
-
-              <span className="font-semibold">
-                Senior UX
-              </span>
-
-            </div>
-
-            <p className="text-sm text-gray-400 mt-2">
-              Optimized product creation experience with
-              responsive design and instant preview.
-            </p>
-
-          </div>
-
-        </div>
-
-
-        {/* ================================================= */}
-        {/* RIGHT - PRODUCT FORM */}
-        {/* ================================================= */}
-
-        <form
-          onSubmit={handleSubmit}
-          className="col-span-12 lg:col-span-7 border rounded-3xl bg-white p-6"
-        >
-
-
-          {/* Product Name */}
-          <div className="mb-5">
-
-            <label className="block text-sm font-medium mb-2">
-              Product Name
-            </label>
-
-            <input
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              placeholder="iPhone 16 Pro"
-              className="w-full bg-gray-100 border border-gray-200 rounded-2xl p-4 outline-none focus:border-cyan-400"
-            />
-
-          </div>
-
-
-          {/* Short Description */}
-          <div className="mb-5">
-
-            <label className="block text-sm font-medium mb-2">
-              Short Description
-            </label>
-
-            <input
-              type="text"
-              name="shortDescription"
-              value={formData.shortDescription}
-              onChange={handleChange}
-              placeholder="Minimum 10 characters"
-              className="w-full bg-gray-100 border border-gray-200 rounded-2xl p-4 outline-none focus:border-cyan-400"
-            />
-
-          </div>
-
-
-          {/* Description */}
-          <div className="mb-5">
-
-            <label className="block text-sm font-medium mb-2">
-              Description
-            </label>
-
-            <textarea
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              placeholder="Minimum 20 characters"
-              rows="5"
-              className="w-full bg-gray-100 border border-gray-200 rounded-2xl p-4 outline-none resize-none focus:border-cyan-400"
-            />
-
-          </div>
-
-
-          {/* Price + Discount */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
-
-            {/* Price */}
-            <div>
-
-              <label className="block text-sm font-medium mb-2">
-                Price
-              </label>
-
-              <input
-                type="number"
-                name="price"
-                value={formData.price}
-                onChange={handleChange}
-                placeholder="100"
-                className="w-full bg-gray-100 border border-gray-200 rounded-2xl p-4 outline-none focus:border-cyan-400"
-              />
-
-            </div>
-
-
-            {/* Discount Price */}
-            <div>
-
-              <label className="block text-sm font-medium mb-2">
-                Discount Price
-              </label>
-
-              <input
-                type="number"
-                name="discountPrice"
-                value={formData.discountPrice}
-                onChange={handleChange}
-                placeholder="90"
-                className="w-full bg-gray-100 border border-gray-200 rounded-2xl p-4 outline-none focus:border-cyan-400"
-              />
-
-            </div>
-
-          </div>
-
-
-          {/* Stock + SKU */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
-
-            {/* Stock */}
-            <div>
-
-              <label className="block text-sm font-medium mb-2">
-                Stock
-              </label>
-
-              <input
-                type="number"
-                name="stock"
-                value={formData.stock}
-                onChange={handleChange}
-                placeholder="0"
-                className="w-full bg-gray-100 border border-gray-200 rounded-2xl p-4 outline-none focus:border-cyan-400"
-              />
-
-            </div>
-
-
-            {/* SKU */}
-            <div>
-
-              <label className="block text-sm font-medium mb-2">
-                SKU
-              </label>
-
-              <input
-                type="text"
-                name="sku"
-                value={formData.sku}
-                onChange={handleChange}
-                placeholder="SKU-001"
-                className="w-full bg-gray-100 border border-gray-200 rounded-2xl p-4 outline-none focus:border-cyan-400"
-              />
-
-            </div>
-
-          </div>
-
-
-          {/* Category + Subcategory */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
-
-            {/* Category */}
-            <div>
-
-              <label className="block text-sm font-medium mb-2">
-                Category
-              </label>
-
-              <select
-                name="category"
-                value={formData.category}
-                onChange={handleChange}
-                className="w-full bg-gray-100 border border-gray-200 rounded-2xl p-4 outline-none focus:border-cyan-400"
-              >
-
-                <option value="">
-                  Select Category
-                </option>
-
-                <option value="electronics">
-                  Electronics
-                </option>
-
-                <option value="phones">
-                  Phones
-                </option>
-
-                <option value="fashion">
-                  Fashion
-                </option>
-
-                <option value="home">
-                  Home
-                </option>
-
-                <option value="beauty">
-                  Beauty
-                </option>
-
-                <option value="sports">
-                  Sports
-                </option>
-
-              </select>
-
-            </div>
-
-
-            {/* Subcategory */}
-            <div>
-
-              <label className="block text-sm font-medium mb-2">
-                Subcategory
-              </label>
-
-              <input
-                type="text"
-                name="subcategory"
-                value={formData.subcategory}
-                onChange={handleChange}
-                placeholder="Smartphones"
-                className="w-full bg-gray-100 border border-gray-200 rounded-2xl p-4 outline-none focus:border-cyan-400"
-              />
-
-            </div>
-
-          </div>
-
-
-          {/* Brand */}
-          <div className="mb-5">
-
-            <label className="block text-sm font-medium mb-2">
-              Brand
-            </label>
-
-            <input
-              type="text"
-              name="brand"
-              value={formData.brand}
-              onChange={handleChange}
-              placeholder="Apple"
-              className="w-full bg-gray-100 border border-gray-200 rounded-2xl p-4 outline-none focus:border-cyan-400"
-            />
-
-          </div>
-
-
-          {/* Featured */}
-          <div className="flex items-center gap-3 mb-6">
-
-            <input
-              type="checkbox"
-              id="featured"
-              name="featured"
-              checked={formData.featured}
-              onChange={handleChange}
-              className="w-4 h-4"
-            />
-
-            <label
-              htmlFor="featured"
-              className="text-sm"
-            >
-              Featured Product
-            </label>
-
-          </div>
-
-
-          {/* Buttons */}
-          <div className="flex justify-end gap-3">
-
-            {/* Cancel */}
-            <button
-              type="button"
-              onClick={handleCancel}
-              className="px-6 py-3 rounded-xl border border-gray-300 hover:bg-gray-100 transition"
-            >
-              Cancel
-            </button>
-
-
-            {/* Submit */}
-            <button
-              type="submit"
-              className="px-6 py-3 rounded-xl bg-cyan-500 text-white font-semibold hover:bg-cyan-600 transition"
-            >
-              Add Product
-            </button>
-
-          </div>
-
-        </form>
-
-      </div>
-
-    </div>
-  );
+  const toggleField = (name) => {
+    setForm((previous) => ({ ...previous, [name]: !previous[name] }))
+    setDirty(true)
+  }
+
+  const handleImages = (files) => {
+    const accepted = []
+    const rejected = []
+    files.forEach((file) => {
+      if (!file.type.startsWith('image/')) rejected.push(`${file.name}: only image files are allowed.`)
+      else if (images.some((existing) => existing.name === file.name && existing.size === file.size)) rejected.push(`${file.name}: already selected.`)
+      else if (images.length + accepted.length >= 5) rejected.push(`${file.name}: only 5 images are allowed.`)
+      else accepted.push(file)
+    })
+    if (accepted.length) {
+      setImages((current) => [...current, ...accepted])
+      setPreviews((current) => [...current, ...accepted.map((file) => ({ file, url: URL.createObjectURL(file) }))])
+      setDirty(true)
+    }
+    if (rejected.length) setErrors((current) => ({ ...current, images: rejected.join(' ') }))
+  }
+
+  const removeImage = (index) => {
+    setPreviews((current) => { const removed = current[index]; if (removed && !removed.existing) URL.revokeObjectURL(removed.url); return current.filter((_, itemIndex) => itemIndex !== index) })
+    setImages((current) => current.filter((_, itemIndex) => itemIndex !== index))
+    setDirty(true)
+  }
+
+  const addTag = () => {
+    const tag = tagDraft.trim()
+    if (!tag || tags.includes(tag)) return
+    setTags((current) => [...current, tag])
+    setTagDraft('')
+    setDirty(true)
+  }
+
+  const handleBack = () => { if (dirty && !window.confirm('Discard this product draft?')) return; if (onClose) onClose(); else navigate('/dashboard/products') }
+
+  const handleSubmit = async (event) => {
+    event.preventDefault()
+    const nextErrors = validate(form)
+    if (!isEditMode && images.length === 0) nextErrors.images = 'At least one product image is required.'
+    if (images.length > 5) nextErrors.images = 'You can upload a maximum of 5 product images.'
+    setErrors(nextErrors)
+    setApiError('')
+    if (Object.keys(nextErrors).length) return
+    setSubmitting(true)
+    try {
+      const payload = new FormData()
+      Object.entries(form).filter(([key]) => key !== 'active').forEach(([key, value]) => payload.append(key, String(value ?? '')))
+      if (isEditMode) payload.append('isActive', String(form.active))
+      tags.forEach((tag) => payload.append('tags', tag))
+      images.forEach((image) => payload.append('images', image))
+      if (isEditMode) await updateProduct(id, payload)
+      else await addProduct(payload)
+      toast.success(isEditMode ? 'Product updated successfully.' : 'Product created successfully.')
+      if (onClose) onClose(); else navigate('/dashboard/products')
+    } catch (requestError) {
+      const responseData = requestError.response?.data
+      const responseMessage = responseData?.message || responseData?.error
+      const fieldErrors = responseData?.errors
+      const readableFieldErrors = fieldErrors && typeof fieldErrors === 'object'
+        ? Object.entries(fieldErrors).map(([fieldName, message]) => `${fieldName}: ${Array.isArray(message) ? message.join(', ') : message}`).join(' | ')
+        : ''
+      setApiError(readableFieldErrors || responseMessage || (requestError.response?.status === 401 || requestError.response?.status === 403 ? 'You are not authorized to create products.' : 'Unable to create product. Please try again.'))
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const field = (name, label, type = 'text', placeholder = '') => <label className="create-field">{label}<input name={name} type={type} value={form[name]} onChange={updateField} placeholder={placeholder} aria-invalid={Boolean(errors[name])} />{errors[name] && <span className="create-field-error">{errors[name]}</span>}</label>
+
+  if (loadingProduct) return <LoadingScreen text="Loading product details..." />
+
+  return <div className="create-product-page"><section className="create-product-header"><button type="button" className="back-products-button" onClick={handleBack}><ArrowLeft size={17} /> Back to products</button><div className="create-header-main"><div className="create-header-icon"><Package size={29} /></div><div><p className="eyebrow">{isEditMode ? 'EDIT PRODUCT' : 'CREATE PRODUCT'}</p><h1>{isEditMode ? <>Update a <em>polished</em> product entry</> : <>Launch a <em>polished</em> product entry</>}</h1><p>{isEditMode ? 'Update product information, inventory and media.' : 'Add products with validation, image previews, multi-upload support, and smooth UX.'}</p></div></div><div className="ready-card"><p className="eyebrow">{isEditMode ? 'EDITING' : 'READY'}</p><span>{isEditMode ? 'Review the details and save your changes.' : 'Create, validate, and save with one click.'}</span></div></section><div className="create-product-columns"><section className="gallery-card"><div className="create-section-heading"><div className="create-section-icon"><ImagePlus size={22} /></div><div><h2>Product Gallery</h2><p>{isEditMode ? 'Existing images are shown below — remove or add more as needed.' : 'Upload multiple images and preview instantly.'}</p></div></div><ImageUploader previews={previews} onFiles={handleImages} onRemove={removeImage} error={errors.images} /><div className="gallery-note"><Sparkles size={17} /><span>Images are sent with the product request after you submit.</span></div></section><form className="product-form-card" onSubmit={handleSubmit} noValidate><div className="form-card-heading"><p className="eyebrow">PRODUCT INFORMATION</p><h2>Product details</h2></div>{apiError && <div className="create-api-error" role="alert">{apiError}</div>}{field('name', 'Product Name', 'text', 'Product name')}<label className="create-field">Short Description<input name="shortDescription" value={form.shortDescription} onChange={updateField} placeholder="Minimum 10 characters" aria-invalid={Boolean(errors.shortDescription)} />{errors.shortDescription && <span className="create-field-error">{errors.shortDescription}</span>}</label><label className="create-field">Description<textarea name="description" value={form.description} onChange={updateField} placeholder="Minimum 20 characters" rows="5" aria-invalid={Boolean(errors.description)} />{errors.description && <span className="create-field-error">{errors.description}</span>}</label><div className="create-form-grid">{field('price', 'Price', 'number', '0.00')}{field('discountPrice', 'Discount Price', 'number', 'Optional')}{field('stock', 'Stock', 'number', '0')}{field('sku', 'SKU', 'text', 'SKU-001')}<label className="create-field">Category{customCategory ? <input name="category" value={form.category} onChange={updateField} placeholder="New category" aria-invalid={Boolean(errors.category)} /> : <select name="category" value={form.category} onChange={(event) => { if (event.target.value === '__new__') { setCustomCategory(true); setForm((previous) => ({ ...previous, category: '' })) } else updateField(event) }} aria-invalid={Boolean(errors.category)}><option value="" disabled>Select category</option>{form.category && !categories.includes(form.category) && <option value={form.category}>{form.category}</option>}{categories.map((category) => <option key={category} value={category}>{category}</option>)}<option value="__new__">+ Add new category</option></select>}{errors.category && <span className="create-field-error">{errors.category}</span>}</label>{field('subcategory', 'Subcategory', 'text', 'Subcategory')}{field('brand', 'Brand', 'text', 'Brand')}</div><section className="tags-field"><h3>Tags</h3><div className="tags-entry"><input value={tagDraft} onChange={(event) => setTagDraft(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); addTag() } }} placeholder="Type a tag and press +" /><button type="button" onClick={addTag} aria-label="Add tag">+</button></div><div className="tag-list">{tags.map((tag) => <span key={tag}>{tag}<button type="button" onClick={() => setTags((current) => current.filter((item) => item !== tag))} aria-label={`Remove ${tag}`}>×</button></span>)}</div><p>Add one or more tags to organize the product.</p></section><div className="product-toggles"><button type="button" className={`status-toggle-button${form.featured ? ' on' : ''}`} aria-pressed={form.featured} onClick={() => toggleField('featured')}><Star size={16} /> Featured</button><button type="button" className={`status-toggle-button${form.active ? ' on' : ''}`} aria-pressed={form.active} onClick={() => toggleField('active')}><CheckCircle2 size={16} /> Active</button></div><div className="create-form-actions"><Button type="button" variant="outline" onClick={handleBack}>Cancel</Button><Button type="submit" loading={submitting} disabled={submitting} className="create-submit"><Save size={17} /> {submitting ? (isEditMode ? 'Saving Changes...' : 'Creating Product...') : (isEditMode ? 'Save Changes' : 'Create Product')}</Button></div></form></div></div>
 }
