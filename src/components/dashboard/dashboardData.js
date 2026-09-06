@@ -51,7 +51,7 @@ export const normalizeOrder = (order) => ({
   customer: firstDefined(order?.user?.username, order?.user?.name, order?.customer?.name, order?.customerName, 'Customer'),
   date: firstDefined(order?.createdAt, order?.date, order?.orderDate),
   status: String(firstDefined(order?.status, 'pending')).toLowerCase(),
-  total: Number(firstDefined(order?.total, order?.totalAmount, order?.grandTotal, order?.amount, 0)),
+  total: Number(firstDefined(order?.totalPrice, order?.total, order?.totalAmount, order?.grandTotal, order?.amount, 0)),
   items: asArray(firstDefined(order?.items, order?.orderItems, order?.products)),
 })
 

@@ -43,7 +43,7 @@ export default function ViewProductPage() {
     <section className="product-detail-card">
       <div className="product-detail-gallery">
         <div className="product-detail-main-image">
-          {images[activeImage] ? <img src={images[activeImage]} alt={product.name} /> : <Package size={56} />}
+          {images[activeImage] ? <img key={images[activeImage]} src={images[activeImage]} alt={product.name} /> : <Package size={56} />}
           {product.featured && <span className="product-featured"><Star size={13} /> Featured</span>}
           {images.length > 1 && <>
             <button type="button" className="product-detail-nav-arrow left" onClick={() => moveImage(-1)} aria-label="Previous image"><ChevronLeft size={20} /></button>

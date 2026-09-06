@@ -96,3 +96,89 @@ Verification:
 - `npm run build` completes successfully after all changes.
 - Started the Vite dev server and confirmed it boots without errors; could not click through the authenticated dashboard UI in a real browser from this session because no admin credentials are available here and the app talks to the live production API (same limitation noted in session 2) — please review the Product Details page and the Products list's "Quick Edit"/"Edit" actions in your own logged-in browser; the dev server picks up these changes via hot reload.
 - No API endpoints, field names, or auth handling were changed — only presentation/markup around the existing getProductById/updateProduct calls.
+
+Date: 2026-09-06 (session 4) — Products page light-mode text + dashboard revenue chart
+
+What was fixed:
+- Found the actual cause of "white text in light mode" on the Products page: `.product-price` and `.product-stats-grid strong` had no `[data-theme="light"]` override, so they kept their near-white dark-mode color (#f3f4f5/#f4f4f5) while their parent cards (`.product-card`, `.product-stats-grid article`) do get a white background in light mode — making the price on every product card and the Total/Featured/In Stock/Out of Stock numbers invisible. Added light-mode color overrides for both.
+- Found a selector-name bug causing the same class of problem for the category/stock filter dropdowns: the CSS light-mode rules targeted `.products-filter-select` and `.products-filters-panel`, but the real markup in ProductsListPage.jsx uses `.products-filters select` and `.products-filters` — so those overrides never matched anything and the filter `<select>` elements stayed dark-styled inside the white search panel. Corrected the selectors so light mode now actually applies.
+- Also darkened the Products header subtitle ("Manage your store products...") and the stat-card small labels, which were low-contrast gray-on-white.
+
+What was added:
+- A "Revenue (Last 7 days)" line chart on the dashboard home page. `src/components/charts/RevenueLineChart.jsx` existed on disk but was never imported/rendered anywhere, and it also had real bugs: it called `axios.get(...)` directly against the hardcoded production URL (bypassing the app's shared `api` instance and its auth interceptor, the same anti-pattern already fixed elsewhere per session 2 notes), and it filtered on a `category === 'team-1-products'` field/value that doesn't match this app's actual team-scoping convention (`subcategory`/`tags` equal to `team-1-product`, see `dashboardData.js`) or any confirmed API response shape.
+- Rewrote it to take the dashboard's already-fetched, already-normalized `orders` (the same data DashboardHome.jsx already loads via `getOrders`/`getOrdersAdmin` and filters with `filterTeamOrders`) and aggregate real order totals per day for the last 7 days client-side — no new API calls, no guessed response shape, no auth bypass. Shows an EmptyState when there's no revenue in the window instead of an empty chart.
+- Wired it into `DashboardHome.jsx` between the stats grid and the order-status/top-products row, styled with the dashboard's existing `.surface-panel`/`.section-heading` classes so it matches the rest of the page instead of introducing new Tailwind-only styling.
+
+Verification:
+- `npm run build` completes successfully (recharts is now actually included in the bundle since the chart is rendered — expected chunk-size warning only, not an error).
+- Could not visually confirm the chart/light-mode fix in a live authenticated browser session for the same reason as prior sessions (no admin credentials available here, app talks to the live production API) — please verify on your end.
+
+Date: 2026-09-06 (session 5) — Revenue & Sales chart + Top Categories donut, matching provided reference design (in English)
+
+What was built (from a reference screenshot showing an Arabic admin dashboard with a category donut chart + a revenue/sales area chart with 7 Days/30 Days/Year tabs and prev/next arrows):
+- `src/components/charts/TopCategoriesDonut.jsx` (new): a donut chart of top-selling product categories with a percentage/name/color-dot legend below it, matching the reference layout. Category revenue is computed client-side from real data already available to the dashboard — teams' raw products (which carry `category`/`price`) matched against the already-computed sales-quantity-per-product (`calculateProductSales`) — no fabricated categories or hardcoded percentages. Falls back to catalog share (count of products per category) if there are no sales yet, same fallback style already used by `calculateProductSales`. Shows EmptyState when there's no product data.
+- `src/components/charts/RevenueLineChart.jsx` (rewritten again): now titled "Revenue & Sales Chart" with "7 Days / 30 Days / Year" range tabs and circular prev/next arrows to page through earlier periods, rendered as a blue gradient area chart (matching the reference's visual style) instead of a plain line. All ranges aggregate the same real `orders` data the dashboard already loads — no new API calls.
+- `DashboardHome.jsx`: added a `categoryProducts` field to dashboard state (the raw, un-normalized team products, since the existing shared `normalizeProduct` in dashboardData.js strips the `category` field needed by the donut chart — left that shared helper untouched since other pages rely on its current shape). Added a new `.dashboard-insights-row` (donut chart + revenue chart side by side, narrower/wider like the reference) above the existing order-status/top-products row.
+- `index.css`: added `.dashboard-insights-row`, `.categories-*`, `.revenue-range-tabs`, `.revenue-chart-body`, `.revenue-nav-arrow` rules (dark + light theme), reusing the existing `.surface-panel`/`.section-heading` card system so the new charts sit visually consistent with the rest of the dashboard instead of introducing a separate design language.
+- Text/labels are all in English per your request (the reference screenshot itself was in Arabic).
+
+Bug fix — "no revenue although we have order": the chart's default window was always "the last 7 calendar days ending today." If the actual order data isn't from the last week (e.g. older seed/test orders), that window is legitimately empty even though `dashboard.orders.length` (used by the Total Orders stat card) counts orders from all time. Fixed by having the chart look at the most recent order's date on load and auto-select whichever range (7 Days / 30 Days / Year, paging back further in whole-year steps if needed) actually contains it, instead of always assuming "now." The range tabs and prev/next arrows still let you navigate manually afterward, and the empty-state message now hints at using them if a chosen period truly has nothing in it.
+
+Verification:
+- `npm run build` completes successfully.
+- Same limitation as before: no admin credentials available in this environment to click through the live authenticated dashboard, so please verify the two new charts and the "no revenue" fix in your own logged-in browser.
+
+Date: 2026-09-06 (session 6) — Fixed the real "$0.00 revenue" bug + chart polish
+
+Root cause found from a screenshot of the live Orders page: the order's Total column showed $0.00 even though the order clearly existed (Order #8D13B5AF, Sep 6 2026, 1 item) — so the earlier "auto-pick a date range with data" fix in session 5 was solving the wrong problem. The real bug: `normalizeOrder()` in `src/components/dashboard/dashboardData.js` read the order total from `order.total`/`order.totalAmount`/`order.grandTotal`/`order.amount`, but the live API's actual field (confirmed from `OrderDetailPage.jsx`/`OrderDetailModal.jsx`, which already display `order.totalPrice` correctly in their order-summary sections) is `totalPrice`. Since that field was never checked, every order's normalized `total` silently fell back to 0 — affecting the Orders table, Recent Orders, dashboard stats, and the new revenue chart all at once (they all consume `normalizeOrder`'s output).
+- Fix: added `order?.totalPrice` as the first candidate in `normalizeOrder`'s total field lookup. Confirmed this didn't touch the existing team-1-product subcategory/tag filtering (`filterTeamOrders`/`filterTeamProducts`) — that logic is untouched and still applies before totals are computed.
+- Per your screenshot, the chart correctly showed the real revenue spike once this was fixed.
+
+Chart polish (per your follow-up):
+- Removed the prev/next period navigation arrows from the Revenue & Sales chart (`RevenueLineChart.jsx`) and the now-unused `.revenue-nav-arrow`/`.revenue-chart-body` CSS — the range tabs (7 Days/30 Days/Year) remain.
+- Lightened the x-axis/y-axis date and value label color on that chart from `#8b909b` to a softer `#c3c7cd`.
+
+Verification:
+- `npm run build` completes successfully after both changes.
+
+Date: 2026-09-06 (session 7) — Page transition animation on navigation
+
+What was added:
+- `DashboardLayout.jsx` now reads the current route with `useLocation()` and wraps the routed page (`<Outlet/>`) in a `<div className="route-transition" key={location.pathname}>`. Keying by pathname makes React remount that wrapper on every navigation (Dashboard → Products → Orders, etc.), which re-triggers its CSS animation each time.
+- `index.css`: added a `.route-transition` fade + slide-up keyframe animation (`route-fade-in`, 0.32s), applied on every dashboard page change, with a `prefers-reduced-motion: reduce` guard that disables it for users who've asked their OS to reduce motion.
+- Left the sidebar's existing hover/active-state transitions (`.sidebar-link`, already `.2s ease`) as-is since they already animate on interaction — only the page-to-page navigation was missing an animation.
+- No new dependencies added (no framer-motion) — this is a small, dependency-free CSS/React solution scoped to the existing route structure.
+
+Verification:
+- `npm run build` completes successfully.
+
+Date: 2026-09-06 (session 8) — Fixed Users page to match the real API schema (from the live Swagger docs)
+
+You shared the actual API docs (https://e-commerce-api-3wara.vercel.app/api-docs). Rather than going only off the screenshots, fetched the real OpenAPI spec from `/api-docs/swagger.json` to get the exact request schemas, and found the Add/Edit User forms were sending fields the API silently ignores or rejects:
+- `POST /users/add` only accepts `username`, `email`, `password` (required) and `phone` (optional) — no `firstName`/`lastName`/`role`. The Add User form was sending firstName/lastName/role, which the API has no field for at all (the User schema itself only has username/email/phone/avatar/role/addresses/isVerified — there's no name-splitting concept in this API).
+- `PATCH /users/{id}` only accepts `username`, `phone`, `avatar` — no `email`/`password`/`role`. The Edit User form was sending email/password/role, none of which that endpoint can change.
+- Role changes have their own dedicated endpoint: `PATCH /auth/change-role` with body `{ userId, role }` (role is `"admin"` or `"customer"`) — this was never called anywhere in the app.
+- Confirmed, per the spec, there truly is no user-verification endpoint anywhere (only OTP verification during registration/password-reset, not an admin "verify a user" action) — the existing "Verify" button in the Users table only ever showed `toast.error('The API does not provide a user verification endpoint.')` and could never succeed.
+
+What was fixed:
+- `src/api/auth.js`: added `changeRole(userId, role)` calling the real `PATCH /auth/change-role`.
+- `src/pages/UsersListPage.jsx`:
+  - Add User form now only collects/sends `username`, `email`, `password`, `phone` (matching `POST /users/add`).
+  - Edit User form now only collects/sends `username`, `phone`, `avatar` (matching `PATCH /users/{id}`) — email/password/role are no longer offered there since the API can't act on them via that endpoint.
+  - Replaced the dead-end "Verify" button with a real "Promote to admin / Demote to customer" action that calls the new `changeRole` API, behind the same confirm-dialog pattern already used for delete.
+  - `normalizeUser` simplified to stop guessing at `firstName`/`lastName`/`fullName` fields that don't exist in the real User schema, and reads `isVerified` directly (matching the schema) instead of guessing at alternate field names.
+
+Verification:
+- `npm run build` completes successfully.
+- Same limitation as prior sessions — no admin credentials to click through the live authenticated Users page, so please verify Add/Edit/Promote-Demote/Delete users against the real API in your own session.
+
+Date: 2026-09-06 (session 9) — Image carousel animations + chart.txt reference doc
+
+What was added:
+- Product card carousel (`ProductsListPage.jsx`'s `ProductCard`) and the Product Details gallery main image (`ViewProductPage.jsx`) now key their `<img>` on the image URL, so switching images (via arrows, thumbnails, or dots) remounts the `<img>` and replays a short fade+scale-in animation (`.product-image`/`.product-detail-main-image img`, `carousel-image-in` keyframe, ~0.28-0.3s, `prefers-reduced-motion`-aware) instead of the image just snapping to the new source.
+- Carousel arrow buttons (`.product-carousel-arrow`, `.product-detail-nav-arrow`) and thumbnails now have hover/active micro-transitions (slight scale up on hover, scale down on click).
+- Carousel dots/indicators (`.product-carousel-dots`, `.product-detail-indicators`) now animate width/color when the active one changes instead of switching instantly.
+- Created `chart.txt` at the project root, at your request, documenting the two dashboard chart components (`TopCategoriesDonut.jsx` and `RevenueLineChart.jsx`) — full current code plus a plain-English explanation of props, data aggregation logic, and rendering for each, including a note that the "100% phone" you're currently seeing on the categories donut is expected behavior (only one category currently has recorded sales/products), not a bug — it will automatically split once more categories have sales.
+
+Verification:
+- `npm run build` completes successfully.

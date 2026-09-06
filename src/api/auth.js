@@ -19,3 +19,7 @@ export const sendPasswordResetOtp = (email) => {
 export const resetPasswordWithOtp = (data) => {
   return api.post("/auth/forgot-password/verify-otp", data);
 };
+
+export const changeRole = (userId, role) => {
+  return api.patch("/auth/change-role", { userId, role });
+};
