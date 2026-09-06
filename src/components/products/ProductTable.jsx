@@ -1,9 +1,7 @@
 import React, { useState } from "react";
-// Import Swiper React components
 import { Navigate, useNavigate } from "react-router-dom";
 import { Swiper, SwiperSlide } from "swiper/react";
   import { deleteProduct } from "../../api/product.js";
-// Import Swiper styles
 import "swiper/css";
 import "swiper/css/pagination";
 import "swiper/css/navigation";
@@ -11,7 +9,6 @@ import { Autoplay } from "swiper/modules";
 import Button from "../common/Button";
 
 
-// import required modules
 import { Pagination, Navigation } from "swiper/modules";
 import { Eye } from "lucide-react";
 import { Pencil } from "lucide-react";
@@ -38,12 +35,7 @@ export default function ProductTable({ products, setProducts,lodding,setLodding 
 
 const handleDelete = async (id) => {
   try {
-    // console.log("TOKEN:", sessionStorage.getItem("token"));
-    // console.log("PRODUCT ID:", id);
-
     const response = await deleteProduct(id);
-
-    // console.log("DELETE RESPONSE:", response.data);
 
     setProducts((prev) =>
       prev.filter((product) => product._id !== id)
@@ -55,9 +47,6 @@ const handleDelete = async (id) => {
     console.log("ERROR:", error.response?.data);
   }
 };
-  // function handleDelete(id) {
-  //   setProducts(products.filter((pro) => pro._id !== id));
-  // }
   return (
     <div className="flex flex-col gap-2">
       <div className="grid grid-col-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mt-10 gap-4">
@@ -73,16 +62,6 @@ const handleDelete = async (id) => {
                   Featured
                 </span>
               </Button>
-
-              {/* <div
-                  className="rounded flex gap-1 items-center justify-center absolute top-4 left-4 z-10"
-                  style={{ background: "var(--primary)" }}
-                >
-                  <Star size={15} />
-                  <span className="text-sm" style={{ color: "var(--text)" }}>
-                    Featured
-                  </span>
-                </div> */}
 
               <div className="border border-[var(--input)]  h-64 overflow-hidden group product  relative">
                 <Button className="absolute z-10   rounded-xl absolute z-10 right-4 bottom-4 text-[13px] py-1 px-2">

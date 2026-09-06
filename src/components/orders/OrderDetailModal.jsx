@@ -7,8 +7,6 @@ import ConfirmDialog from "../common/ConfirmDialog";
 import { getOrder } from "../../api/orders";
 import api from "../../api/axios";
 
-// These are the statuses currently supported by the orders API.
-// Keeping them here makes the dropdown easier to maintain.
 const STATUS_OPTIONS = [
   "pending",
   "confirmed",
@@ -19,8 +17,6 @@ const STATUS_OPTIONS = [
   "returned",
 ];
 
-// Format all order amounts in the same way.
-// API values can be missing, so we fall back to zero.
 const formatMoney = (value) => {
   const amount = Number(value || 0);
 
@@ -30,8 +26,6 @@ const formatMoney = (value) => {
   })} EGP`;
 };
 
-// Use one date format across the modal instead of formatting
-// dates directly inside the JSX.
 const formatDate = (date) => {
   if (!date) return "—";
 
@@ -42,15 +36,12 @@ const formatDate = (date) => {
   });
 };
 
-// API values are lowercase, but we want a cleaner label in the UI.
 const capitalize = (value) => {
   if (!value) return "—";
 
   return value.charAt(0).toUpperCase() + value.slice(1);
 };
 
-// Return the badge style based on the current order status.
-// Unknown values use the pending/default style.
 const getStatusClasses = (status) => {
   switch (status) {
     case "delivered":
@@ -76,8 +67,6 @@ const getStatusClasses = (status) => {
   }
 };
 
-// Payment status has its own badge colors since it is separate
-// from the order fulfillment status.
 const getPaymentStatusClasses = (status) => {
   switch (status) {
     case "paid":
@@ -99,26 +88,18 @@ export default function OrderDetailModal({
   orderId,
   onClose,
 }) {
-  // Main order data and GET request states.
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // selectedStatus controls what the dropdown displays.
-  // pendingStatus keeps the new value until the user confirms it.
   const [selectedStatus, setSelectedStatus] = useState("");
   const [pendingStatus, setPendingStatus] = useState(null);
 
-  // Admin note is kept locally and sent with the status update.
   const [adminNote, setAdminNote] = useState("");
 
-  // The confirmation dialog and PATCH request need their own states.
-  // This keeps the initial GET loading separate from the update loading.
   const [showConfirm, setShowConfirm] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
 
-  // Load the order whenever the modal opens with a valid order ID.
-  // It also runs again if the user opens another order.
   useEffect(() => {
     if (!isOpen || !orderId) return;
 
@@ -127,15 +108,11 @@ export default function OrderDetailModal({
         setLoading(true);
         setError("");
 
-        // Clear the previous order so we do not show old details
-        // while the next order is being loaded.
         setOrder(null);
 
         const response = await getOrder(orderId);
         const fetchedOrder = response.data?.order;
 
-        // A successful request should always contain an order object.
-        // Treat a missing object as an error instead of rendering bad data.
         if (!fetchedOrder) {
           throw new Error(
             "Order was not found in the API response."
@@ -144,13 +121,11 @@ export default function OrderDetailModal({
 
         setOrder(fetchedOrder);
 
-        // Start the editable fields with the latest server values.
         setSelectedStatus(fetchedOrder.status || "");
         setAdminNote(fetchedOrder.adminNote || "");
       } catch (err) {
         console.error("Failed to fetch order:", err);
 
-        // Prefer the backend message when available.
         setError(
           err.response?.data?.message ||
             err.message ||
@@ -164,13 +139,9 @@ export default function OrderDetailModal({
     fetchOrder();
   }, [isOpen, orderId]);
 
-  // Changing the dropdown should not update the order immediately.
-  // We keep the new value pending and ask for confirmation first.
   const handleStatusChange = (event) => {
     const newStatus = event.target.value;
 
-    // There is nothing to update if the selected value
-    // is already the status saved on the order.
     if (newStatus === order?.status) {
       setSelectedStatus(order.status);
       setPendingStatus(null);
@@ -178,24 +149,18 @@ export default function OrderDetailModal({
       return;
     }
 
-    // Update the dropdown locally, but do not call the API yet.
     setSelectedStatus(newStatus);
     setPendingStatus(newStatus);
 
-    // The actual PATCH request happens only after confirmation.
     setShowConfirm(true);
   };
 
-  // If the user cancels, restore the dropdown to the last
-  // status received from the server.
   const handleCancelStatusChange = () => {
     setSelectedStatus(order?.status || "");
     setPendingStatus(null);
     setShowConfirm(false);
   };
 
-  // This is the only place where we persist a status change.
-  // It runs after the user clicks Update in the confirmation dialog.
   const handleConfirmStatusChange = async () => {
     if (!order || !pendingStatus) return;
 
@@ -203,8 +168,6 @@ export default function OrderDetailModal({
       setIsUpdating(true);
       setError("");
 
-      // Send both values together so the admin note can be stored
-      // with the status update when one has been entered.
       const response = await api.patch(
         `/orders/admin/${order._id}/status`,
         {
@@ -215,22 +178,17 @@ export default function OrderDetailModal({
 
       const updatedOrder = response.data?.order;
 
-      // The update response should contain the latest order.
-      // We use it directly instead of making another GET request.
       if (!updatedOrder) {
         throw new Error(
           "Updated order was not found in the API response."
         );
       }
 
-      // Keep local state in sync with what the server returned.
       setOrder(updatedOrder);
       setSelectedStatus(updatedOrder.status);
 
-      // Keep the typed note if the response does not return one.
       setAdminNote(updatedOrder.adminNote || adminNote);
 
-      // The pending value is no longer needed after a successful update.
       setPendingStatus(null);
       setShowConfirm(false);
 
@@ -246,14 +204,11 @@ export default function OrderDetailModal({
         err.message ||
         "Failed to update order status.";
 
-      // The server update failed, so the persisted order status
-      // is still the source of truth for the dropdown.
       setSelectedStatus(order.status);
 
       setPendingStatus(null);
       setShowConfirm(false);
 
-      // Keep an inline error for context and a toast for feedback.
       setError(message);
       toast.error(message);
     } finally {
@@ -261,8 +216,6 @@ export default function OrderDetailModal({
     }
   };
 
-  // Reset temporary status state before closing the modal.
-  // Closing is disabled while PATCH is still running.
   const handleClose = () => {
     if (isUpdating) return;
 
@@ -274,8 +227,6 @@ export default function OrderDetailModal({
     onClose();
   };
 
-  // A shorter ID is easier to scan in the modal header
-  // while the full ID is still used for API requests.
   const shortOrderId = order?._id
     ?.slice(-8)
     .toUpperCase();
@@ -285,9 +236,8 @@ export default function OrderDetailModal({
       <Modal
         isOpen={isOpen}
         onClose={handleClose}
-        className="!max-w-[460px] !rounded-xl !border !border-slate-800 !bg-slate-950 !text-slate-100 sm:ml-auto sm:mr-0"
+        className="order-detail-modal !max-w-[460px] !rounded-xl !border !border-slate-800 !bg-slate-950 !text-slate-100 sm:ml-auto sm:mr-0"
       >
-        {/* Show a local loading state while fetching this order */}
         {loading && (
           <div className="flex min-h-[500px] items-center justify-center">
             <div className="text-center">
@@ -300,7 +250,6 @@ export default function OrderDetailModal({
           </div>
         )}
 
-        {/* Initial fetch error - there is no order to display yet */}
         {!loading && error && !order && (
           <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4">
             <p className="text-sm text-red-300">
@@ -309,10 +258,8 @@ export default function OrderDetailModal({
           </div>
         )}
 
-        {/* Render the details only after the order has loaded */}
         {!loading && order && (
           <div className="space-y-5">
-            {/* Order header and current statuses */}
             <div>
               <div className="flex items-start justify-between gap-4">
                 <div>
@@ -325,14 +272,12 @@ export default function OrderDetailModal({
                   </h2>
                 </div>
 
-                {/* Payment method is shown separately from payment status */}
                 <p className="text-sm font-semibold text-slate-300">
                   {capitalize(order.paymentMethod)}
                 </p>
               </div>
 
               <div className="mt-3 flex flex-wrap gap-2">
-                {/* Current fulfillment status */}
                 <span
                   className={`rounded-full border px-3 py-1 text-xs font-semibold ${getStatusClasses(
                     order.status
@@ -341,7 +286,6 @@ export default function OrderDetailModal({
                   {capitalize(order.status)}
                 </span>
 
-                {/* Current payment status */}
                 <span
                   className={`rounded-full px-3 py-1 text-xs font-semibold uppercase ${getPaymentStatusClasses(
                     order.paymentStatus
@@ -352,14 +296,12 @@ export default function OrderDetailModal({
               </div>
             </div>
 
-            {/* Basic customer and shipping information */}
             <section className="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
               <h3 className="mb-4 text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">
                 Info
               </h3>
 
               <div className="space-y-4">
-                {/* Order creation date */}
                 <div className="flex justify-between gap-5">
                   <span className="text-sm text-slate-500">
                     Date
@@ -370,7 +312,6 @@ export default function OrderDetailModal({
                   </span>
                 </div>
 
-                {/* Customer name comes from the shipping address */}
                 <div className="flex justify-between gap-5">
                   <span className="text-sm text-slate-500">
                     Customer
@@ -381,7 +322,6 @@ export default function OrderDetailModal({
                   </span>
                 </div>
 
-                {/* Contact number used for delivery */}
                 <div className="flex justify-between gap-5">
                   <span className="text-sm text-slate-500">
                     Phone
@@ -392,7 +332,6 @@ export default function OrderDetailModal({
                   </span>
                 </div>
 
-                {/* Keep the compact modal address short */}
                 <div className="flex justify-between gap-5">
                   <span className="text-sm text-slate-500">
                     Ship to
@@ -410,7 +349,6 @@ export default function OrderDetailModal({
               </div>
             </section>
 
-            {/* Products included in the order */}
             <section className="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
               <h3 className="mb-4 text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">
                 Items
@@ -423,7 +361,6 @@ export default function OrderDetailModal({
                       key={`${item.product || "item"}-${index}`}
                       className="flex items-center gap-3"
                     >
-                      {/* Product thumbnail with a fallback for missing images */}
                       <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-lg border border-slate-800 bg-slate-950">
                         {item.image ? (
                           <img
@@ -438,7 +375,6 @@ export default function OrderDetailModal({
                         )}
                       </div>
 
-                      {/* Product name and quantity */}
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium leading-5 text-slate-200">
                           {item.name || "Unnamed product"}
@@ -449,7 +385,6 @@ export default function OrderDetailModal({
                         </p>
                       </div>
 
-                      {/* Unit price returned with the order item */}
                       <p className="text-right text-xs font-semibold text-slate-200">
                         {formatMoney(item.price)}
                       </p>
@@ -457,14 +392,12 @@ export default function OrderDetailModal({
                   ))}
                 </div>
               ) : (
-                // Keep an empty state here in case an order has no items
                 <p className="text-sm text-slate-500">
                   No items found.
                 </p>
               )}
             </section>
 
-            {/* Order price breakdown */}
             <section className="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between">
@@ -507,7 +440,6 @@ export default function OrderDetailModal({
                   </span>
                 </div>
 
-                {/* Keep the final total visually separated from other amounts */}
                 <div className="border-t border-slate-800 pt-4">
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-white">
@@ -522,7 +454,6 @@ export default function OrderDetailModal({
               </div>
             </section>
 
-            {/* Status can be selected here, but it is not saved immediately */}
             <section>
               <h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">
                 Update Status
@@ -545,7 +476,6 @@ export default function OrderDetailModal({
               </select>
             </section>
 
-            {/* Internal note that will be sent with the status update */}
             <section>
               <label
                 htmlFor="modal-admin-note"
@@ -567,7 +497,6 @@ export default function OrderDetailModal({
               />
             </section>
 
-            {/* PATCH errors stay visible without removing the order details */}
             {error && (
               <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3">
                 <p className="text-sm text-red-300">
@@ -579,7 +508,6 @@ export default function OrderDetailModal({
         )}
       </Modal>
 
-      {/* Always confirm before persisting the selected status */}
       <ConfirmDialog
         isOpen={showConfirm}
         title="Update Order Status"

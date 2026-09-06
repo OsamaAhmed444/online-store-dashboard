@@ -14,7 +14,6 @@ export function AuthProvider({ children }) {
 
   const isAuthenticated = !!user;
 
-  // Login
   const login = async (email, password) => {
     const normalizedEmail = String(email || "").trim().toLowerCase();
     const normalizedPassword = String(password || "");
@@ -37,7 +36,6 @@ export function AuthProvider({ children }) {
     }
   };
 
-  // Logout
   const logout = async () => {
     try {
       await logoutApi();
@@ -48,7 +46,6 @@ export function AuthProvider({ children }) {
     }
   };
 
-  // Restore session after refresh
   useEffect(() => {
     const restoreSession = async () => {
       const savedToken = sessionStorage.getItem("token");
@@ -84,6 +81,7 @@ export function AuthProvider({ children }) {
         loading,
         login,
         logout,
+        setUser,
       }}
     >
       {children}
@@ -91,7 +89,6 @@ export function AuthProvider({ children }) {
   );
 }
 
-// Hook for using authentication anywhere
 export function useAuth() {
   return useContext(AuthContext);
 }

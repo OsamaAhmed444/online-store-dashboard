@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { ArrowLeft, ImagePlus, Package, Save, Sparkles } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, ImagePlus, Package, Save, Sparkles, Star } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'react-toastify'
-import { addProduct, getProductById, updateProduct } from '../api/products'
+import { addProduct, getProductById, getProducts, updateProduct } from '../api/products'
 import Button from '../components/common/Button'
 import ImageUploader from '../components/products/ImageUploader'
+import { LoadingScreen } from '../components/common/Spinner'
 
 const initialForm = { name: '', shortDescription: '', description: '', price: '', discountPrice: '', stock: '', sku: '', category: '', subcategory: '', brand: '', featured: false, active: true }
 
@@ -19,11 +20,14 @@ function validate(form) {
   return errors
 }
 
-export default function AddProductPage() {
+export default function AddProductPage({ productId, onClose }) {
   const navigate = useNavigate()
-  const { id } = useParams()
+  const { id: routeId } = useParams()
+  const id = productId || routeId
   const isEditMode = Boolean(id)
   const [form, setForm] = useState(initialForm)
+  const [categories, setCategories] = useState([])
+  const [customCategory, setCustomCategory] = useState(false)
   const [tags, setTags] = useState([])
   const [tagDraft, setTagDraft] = useState('')
   const [images, setImages] = useState([])
@@ -37,6 +41,18 @@ export default function AddProductPage() {
 
   previewsRef.current = previews
   useEffect(() => () => previewsRef.current.forEach((preview) => URL.revokeObjectURL(preview.url)), [])
+
+  useEffect(() => {
+    let mounted = true
+    getProducts()
+      .then((response) => {
+        if (!mounted) return
+        const products = Array.isArray(response.data?.products) ? response.data.products : Array.isArray(response.data) ? response.data : []
+        setCategories([...new Set(products.map((product) => product.category).filter(Boolean))].sort())
+      })
+      .catch(() => { })
+    return () => { mounted = false }
+  }, [])
 
   useEffect(() => {
     if (!isEditMode) return
@@ -67,12 +83,18 @@ export default function AddProductPage() {
     if (errors[name]) setErrors((previous) => ({ ...previous, [name]: '' }))
   }
 
+  const toggleField = (name) => {
+    setForm((previous) => ({ ...previous, [name]: !previous[name] }))
+    setDirty(true)
+  }
+
   const handleImages = (files) => {
     const accepted = []
     const rejected = []
     files.forEach((file) => {
       if (!file.type.startsWith('image/')) rejected.push(`${file.name}: only image files are allowed.`)
       else if (images.some((existing) => existing.name === file.name && existing.size === file.size)) rejected.push(`${file.name}: already selected.`)
+      else if (images.length + accepted.length >= 5) rejected.push(`${file.name}: only 5 images are allowed.`)
       else accepted.push(file)
     })
     if (accepted.length) {
@@ -97,11 +119,13 @@ export default function AddProductPage() {
     setDirty(true)
   }
 
-  const handleBack = () => { if (dirty && !window.confirm('Discard this product draft?')) return; navigate('/dashboard/products') }
+  const handleBack = () => { if (dirty && !window.confirm('Discard this product draft?')) return; if (onClose) onClose(); else navigate('/dashboard/products') }
 
   const handleSubmit = async (event) => {
     event.preventDefault()
     const nextErrors = validate(form)
+    if (!isEditMode && images.length === 0) nextErrors.images = 'At least one product image is required.'
+    if (images.length > 5) nextErrors.images = 'You can upload a maximum of 5 product images.'
     setErrors(nextErrors)
     setApiError('')
     if (Object.keys(nextErrors).length) return
@@ -115,7 +139,7 @@ export default function AddProductPage() {
       if (isEditMode) await updateProduct(id, payload)
       else await addProduct(payload)
       toast.success(isEditMode ? 'Product updated successfully.' : 'Product created successfully.')
-      navigate('/dashboard/products')
+      if (onClose) onClose(); else navigate('/dashboard/products')
     } catch (requestError) {
       const responseData = requestError.response?.data
       const responseMessage = responseData?.message || responseData?.error
@@ -131,7 +155,7 @@ export default function AddProductPage() {
 
   const field = (name, label, type = 'text', placeholder = '') => <label className="create-field">{label}<input name={name} type={type} value={form[name]} onChange={updateField} placeholder={placeholder} aria-invalid={Boolean(errors[name])} />{errors[name] && <span className="create-field-error">{errors[name]}</span>}</label>
 
-  if (loadingProduct) return <div className="create-product-page"><div className="products-state">Loading product details...</div></div>
+  if (loadingProduct) return <LoadingScreen text="Loading product details..." />
 
-  return <div className="create-product-page"><section className="create-product-header"><button type="button" className="back-products-button" onClick={handleBack}><ArrowLeft size={17} /> Back to products</button><div className="create-header-main"><div className="create-header-icon"><Package size={29} /></div><div><p className="eyebrow">{isEditMode ? 'EDIT PRODUCT' : 'CREATE PRODUCT'}</p><h1>{isEditMode ? <>Update a <em>polished</em> product entry</> : <>Launch a <em>polished</em> product entry</>}</h1><p>{isEditMode ? 'Update product information, inventory and media.' : 'Add products with validation, image previews, multi-upload support, and smooth UX.'}</p></div></div><div className="ready-card"><p className="eyebrow">{isEditMode ? 'EDITING' : 'READY'}</p><span>{isEditMode ? 'Review the details and save your changes.' : 'Create, validate, and save with one click.'}</span></div></section><div className="create-product-columns"><section className="gallery-card"><div className="create-section-heading"><div className="create-section-icon"><ImagePlus size={22} /></div><div><h2>Gallery</h2><p>Upload multiple images and preview instantly.</p></div></div><ImageUploader previews={previews} onFiles={handleImages} onRemove={removeImage} error={errors.images} /><div className="gallery-note"><Sparkles size={17} /><span>Images are sent with the product request after you submit.</span></div></section><form className="product-form-card" onSubmit={handleSubmit} noValidate><div className="form-card-heading"><p className="eyebrow">PRODUCT INFORMATION</p><h2>Product details</h2></div>{apiError && <div className="create-api-error" role="alert">{apiError}</div>}{field('name', 'Product Name', 'text', 'Product name')}<label className="create-field">Short Description<input name="shortDescription" value={form.shortDescription} onChange={updateField} placeholder="Minimum 10 characters" aria-invalid={Boolean(errors.shortDescription)} />{errors.shortDescription && <span className="create-field-error">{errors.shortDescription}</span>}</label><label className="create-field">Description<textarea name="description" value={form.description} onChange={updateField} placeholder="Minimum 20 characters" rows="5" aria-invalid={Boolean(errors.description)} />{errors.description && <span className="create-field-error">{errors.description}</span>}</label><div className="create-form-grid">{field('price', 'Price', 'number', '0.00')}{field('discountPrice', 'Discount Price', 'number', 'Optional')}{field('stock', 'Stock', 'number', '0')}{field('sku', 'SKU', 'text', 'SKU-001')}{field('category', 'Category', 'text', 'Category')}{field('subcategory', 'Subcategory', 'text', 'Subcategory')}{field('brand', 'Brand', 'text', 'Brand')}</div><section className="tags-field"><h3>Tags</h3><div className="tags-entry"><input value={tagDraft} onChange={(event) => setTagDraft(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); addTag() } }} placeholder="Type a tag and press +" /><button type="button" onClick={addTag} aria-label="Add tag">+</button></div><div className="tag-list">{tags.map((tag) => <span key={tag}>{tag}<button type="button" onClick={() => setTags((current) => current.filter((item) => item !== tag))} aria-label={`Remove ${tag}`}>×</button></span>)}</div><p>Add one or more tags to organize the product.</p></section><div className="product-toggles"><label className="featured-toggle"><input name="featured" type="checkbox" checked={form.featured} onChange={updateField} /><span>Featured</span></label><label className="featured-toggle"><input name="active" type="checkbox" checked={form.active} onChange={updateField} /><span>Active</span></label></div><div className="create-form-actions"><Button type="button" variant="outline" onClick={handleBack}>Cancel</Button><Button type="submit" loading={submitting} disabled={submitting} className="create-submit"><Save size={17} /> {submitting ? (isEditMode ? 'Saving Changes...' : 'Creating Product...') : (isEditMode ? 'Save Changes' : 'Create Product')}</Button></div></form></div></div>
+  return <div className="create-product-page"><section className="create-product-header"><button type="button" className="back-products-button" onClick={handleBack}><ArrowLeft size={17} /> Back to products</button><div className="create-header-main"><div className="create-header-icon"><Package size={29} /></div><div><p className="eyebrow">{isEditMode ? 'EDIT PRODUCT' : 'CREATE PRODUCT'}</p><h1>{isEditMode ? <>Update a <em>polished</em> product entry</> : <>Launch a <em>polished</em> product entry</>}</h1><p>{isEditMode ? 'Update product information, inventory and media.' : 'Add products with validation, image previews, multi-upload support, and smooth UX.'}</p></div></div><div className="ready-card"><p className="eyebrow">{isEditMode ? 'EDITING' : 'READY'}</p><span>{isEditMode ? 'Review the details and save your changes.' : 'Create, validate, and save with one click.'}</span></div></section><div className="create-product-columns"><section className="gallery-card"><div className="create-section-heading"><div className="create-section-icon"><ImagePlus size={22} /></div><div><h2>Product Gallery</h2><p>{isEditMode ? 'Existing images are shown below — remove or add more as needed.' : 'Upload multiple images and preview instantly.'}</p></div></div><ImageUploader previews={previews} onFiles={handleImages} onRemove={removeImage} error={errors.images} /><div className="gallery-note"><Sparkles size={17} /><span>Images are sent with the product request after you submit.</span></div></section><form className="product-form-card" onSubmit={handleSubmit} noValidate><div className="form-card-heading"><p className="eyebrow">PRODUCT INFORMATION</p><h2>Product details</h2></div>{apiError && <div className="create-api-error" role="alert">{apiError}</div>}{field('name', 'Product Name', 'text', 'Product name')}<label className="create-field">Short Description<input name="shortDescription" value={form.shortDescription} onChange={updateField} placeholder="Minimum 10 characters" aria-invalid={Boolean(errors.shortDescription)} />{errors.shortDescription && <span className="create-field-error">{errors.shortDescription}</span>}</label><label className="create-field">Description<textarea name="description" value={form.description} onChange={updateField} placeholder="Minimum 20 characters" rows="5" aria-invalid={Boolean(errors.description)} />{errors.description && <span className="create-field-error">{errors.description}</span>}</label><div className="create-form-grid">{field('price', 'Price', 'number', '0.00')}{field('discountPrice', 'Discount Price', 'number', 'Optional')}{field('stock', 'Stock', 'number', '0')}{field('sku', 'SKU', 'text', 'SKU-001')}<label className="create-field">Category{customCategory ? <input name="category" value={form.category} onChange={updateField} placeholder="New category" aria-invalid={Boolean(errors.category)} /> : <select name="category" value={form.category} onChange={(event) => { if (event.target.value === '__new__') { setCustomCategory(true); setForm((previous) => ({ ...previous, category: '' })) } else updateField(event) }} aria-invalid={Boolean(errors.category)}><option value="" disabled>Select category</option>{form.category && !categories.includes(form.category) && <option value={form.category}>{form.category}</option>}{categories.map((category) => <option key={category} value={category}>{category}</option>)}<option value="__new__">+ Add new category</option></select>}{errors.category && <span className="create-field-error">{errors.category}</span>}</label>{field('subcategory', 'Subcategory', 'text', 'Subcategory')}{field('brand', 'Brand', 'text', 'Brand')}</div><section className="tags-field"><h3>Tags</h3><div className="tags-entry"><input value={tagDraft} onChange={(event) => setTagDraft(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); addTag() } }} placeholder="Type a tag and press +" /><button type="button" onClick={addTag} aria-label="Add tag">+</button></div><div className="tag-list">{tags.map((tag) => <span key={tag}>{tag}<button type="button" onClick={() => setTags((current) => current.filter((item) => item !== tag))} aria-label={`Remove ${tag}`}>×</button></span>)}</div><p>Add one or more tags to organize the product.</p></section><div className="product-toggles"><button type="button" className={`status-toggle-button${form.featured ? ' on' : ''}`} aria-pressed={form.featured} onClick={() => toggleField('featured')}><Star size={16} /> Featured</button><button type="button" className={`status-toggle-button${form.active ? ' on' : ''}`} aria-pressed={form.active} onClick={() => toggleField('active')}><CheckCircle2 size={16} /> Active</button></div><div className="create-form-actions"><Button type="button" variant="outline" onClick={handleBack}>Cancel</Button><Button type="submit" loading={submitting} disabled={submitting} className="create-submit"><Save size={17} /> {submitting ? (isEditMode ? 'Saving Changes...' : 'Creating Product...') : (isEditMode ? 'Save Changes' : 'Create Product')}</Button></div></form></div></div>
 }

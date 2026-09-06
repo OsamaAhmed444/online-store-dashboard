@@ -16,7 +16,6 @@ const STATUS_OPTIONS = [
   "returned",
 ];
 
-// Format money like the design: 14,000,000.00 EGP
 const formatMoney = (value) => {
   const amount = Number(value || 0);
 
@@ -26,7 +25,6 @@ const formatMoney = (value) => {
   })} EGP`;
 };
 
-// Format date like: 27 Aug 2026
 const formatDate = (date) => {
   if (!date) return "—";
 
@@ -37,14 +35,12 @@ const formatDate = (date) => {
   });
 };
 
-// Capitalize the first letter.
 const capitalize = (value) => {
   if (!value) return "—";
 
   return value.charAt(0).toUpperCase() + value.slice(1);
 };
 
-// Static Tailwind classes are used so Tailwind can detect them.
 const getStatusClasses = (status) => {
   switch (status) {
     case "delivered":
@@ -87,35 +83,25 @@ const getPaymentStatusClasses = (status) => {
 };
 
 export default function OrderDetailPage() {
-  // Get order ID from /dashboard/orders/:id
   const { id } = useParams();
 
-  // Real order returned from backend.
   const [order, setOrder] = useState(null);
 
-  // GET loading state.
   const [loading, setLoading] = useState(true);
 
-  // GET/PATCH error.
   const [error, setError] = useState("");
 
-  // Current dropdown value.
   const [selectedStatus, setSelectedStatus] = useState("");
 
-  // Proposed status waiting for confirmation.
   const [pendingStatus, setPendingStatus] = useState(null);
 
-  // Existing/new admin note.
   const [adminNote, setAdminNote] = useState("");
 
-  // Controls ConfirmDialog.
   const [showConfirm, setShowConfirm] = useState(false);
 
-  // PATCH loading state.
   const [isUpdating, setIsUpdating] = useState(false);
 
   
-  // featch order 
   
 
   useEffect(() => {
@@ -126,7 +112,6 @@ export default function OrderDetailPage() {
         setLoading(true);
         setError("");
 
-        // Uses the shared Axios instance through api/orders.js.
         const response = await getOrder(id);
 
         const fetchedOrder = response.data?.order;
@@ -154,13 +139,11 @@ export default function OrderDetailPage() {
     fetchOrder();
   }, [id]);
 
-  // status change 
   
 
   const handleStatusChange = (event) => {
     const newStatus = event.target.value;
 
-    // Selecting the current persisted status does nothing.
     if (newStatus === order?.status) {
       setSelectedStatus(order.status);
       setPendingStatus(null);
@@ -168,31 +151,23 @@ export default function OrderDetailPage() {
       return;
     }
 
-    // Only change the UI value.
     setSelectedStatus(newStatus);
 
-    // Store proposed status separately.
     setPendingStatus(newStatus);
 
-    // Ask for confirmation BEFORE PATCH.
     setShowConfirm(true);
   };
 
-  // cancel status change 
 
   const handleCancelStatusChange = () => {
-    // Return dropdown to persisted server status.
     setSelectedStatus(order?.status || "");
 
-    // Remove proposed status.
     setPendingStatus(null);
 
-    // Close confirmation.
     setShowConfirm(false);
   };
 
   
-  // confirm status change 
 
   const handleConfirmStatusChange = async () => {
     if (!pendingStatus || !order) return;
@@ -220,7 +195,6 @@ export default function OrderDetailPage() {
         );
       }
 
-      // Update UI only after backend confirms success.
       setOrder(updatedOrder);
       setSelectedStatus(updatedOrder.status);
       setAdminNote(updatedOrder.adminNote || adminNote);
@@ -240,7 +214,6 @@ export default function OrderDetailPage() {
         err.message ||
         "Failed to update order status.";
 
-      // Persisted order.status has not changed.
       setSelectedStatus(order.status);
 
       setPendingStatus(null);
@@ -253,7 +226,6 @@ export default function OrderDetailPage() {
     }
   };
 
-  // Loading 
 
   if (loading) {
     return (
@@ -269,7 +241,6 @@ export default function OrderDetailPage() {
     );
   }
 
-  //Feacth error 
 
   if (error && !order) {
     return (
@@ -295,18 +266,15 @@ export default function OrderDetailPage() {
     );
   }
 
-  // Last 8 characters like the design.
   const shortOrderId = order._id
     ?.slice(-8)
     .toUpperCase();
 
-  // page
 
   return (
-    <div className="min-h-full p-4 sm:p-6 lg:p-8">
+    <div className="order-detail-page min-h-full p-4 sm:p-6 lg:p-8">
       <div className="mx-auto max-w-5xl">
 
-        {/* HEADER */}
         <div className="mb-6 flex flex-col gap-4 border-b border-slate-800 pb-6 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
@@ -349,10 +317,8 @@ export default function OrderDetailPage() {
 
         <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
 
-          {/* LEFT SIDE */}
           <div className="space-y-6">
 
-            {/* INFO */}
             <section className="rounded-xl border border-slate-800 bg-slate-900/60 p-5">
               <h2 className="mb-5 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
                 Info
@@ -421,7 +387,6 @@ export default function OrderDetailPage() {
               )}
             </section>
 
-            {/* ITEMS */}
             <section className="rounded-xl border border-slate-800 bg-slate-900/60 p-5">
               <h2 className="mb-5 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
                 Items
@@ -471,7 +436,6 @@ export default function OrderDetailPage() {
               )}
             </section>
 
-            {/* CUSTOMER NOTE */}
             {order.customerNote && (
               <section className="rounded-xl border border-slate-800 bg-slate-900/60 p-5">
                 <h2 className="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
@@ -485,10 +449,8 @@ export default function OrderDetailPage() {
             )}
           </div>
 
-          {/* RIGHT SIDE */}
           <div className="space-y-6">
 
-            {/* TOTALS */}
             <section className="rounded-xl border border-slate-800 bg-slate-900/60 p-5">
               <div className="space-y-4 text-sm">
                 <div className="flex justify-between gap-4">
@@ -545,7 +507,6 @@ export default function OrderDetailPage() {
               </div>
             </section>
 
-            {/* UPDATE STATUS */}
             <section className="rounded-xl border border-slate-800 bg-slate-900/60 p-5">
               <h2 className="mb-5 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
                 Update Status
@@ -605,7 +566,6 @@ export default function OrderDetailPage() {
           </div>
         </div>
 
-        {/* CONFIRM BEFORE PATCH */}
         <ConfirmDialog
           isOpen={showConfirm}
           title="Update Order Status"

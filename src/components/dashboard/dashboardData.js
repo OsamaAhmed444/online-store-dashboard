@@ -1,5 +1,33 @@
 const firstDefined = (...values) => values.find((value) => value !== undefined && value !== null)
 
+export const TEAM_PRODUCT_TAG = 'team-1-product'
+
+const normalizedTeamValue = (value) => String(value || '').trim().toLowerCase()
+
+export const isTeamProduct = (product) => {
+  if (!product || typeof product !== 'object') return false
+  if (normalizedTeamValue(product.subcategory) === TEAM_PRODUCT_TAG) return true
+
+  return asArray(product.tags).some((tag) => {
+    const value = typeof tag === 'object' ? firstDefined(tag.name, tag.value, tag.label) : tag
+    return normalizedTeamValue(value) === TEAM_PRODUCT_TAG
+  })
+}
+
+export const filterTeamProducts = (products) => asArray(products).filter(isTeamProduct)
+
+export const orderContainsTeamProduct = (order, teamProductIds) => asArray(firstDefined(order?.items, order?.orderItems, order?.products)).some((item) => {
+  const product = item?.product || item?.productId
+  if (isTeamProduct(product)) return true
+  const productId = typeof product === 'object' ? firstDefined(product?._id, product?.id) : product
+  return productId && teamProductIds.has(String(productId))
+})
+
+export const filterTeamOrders = (orders, products) => {
+  const teamProductIds = new Set(filterTeamProducts(products).map((product) => String(firstDefined(product?._id, product?.id, product?.productId))).filter(Boolean))
+  return asArray(orders).filter((order) => orderContainsTeamProduct(order, teamProductIds))
+}
+
 const asArray = (value) => (Array.isArray(value) ? value : [])
 
 const payloadCollections = (payload, keys) => {

@@ -30,19 +30,19 @@ export default function TopProductsTable() {
   if (error) return <EmptyState title="Error" message={error} />
 
   return (
-    <div className="overflow-x-auto bg-[#FFF7ED] dark:bg-[#1F2937] shadow-md rounded-lg p-6 border border-[#FFEDD5] dark:border-gray-800 transition-colors">
-      <h3 className="text-lg font-bold mb-4 text-[#1F2937] dark:text-[#FFF7ED]">Top Product</h3>
-      <table className="min-w-full divide-y divide-[#FFEDD5] dark:divide-gray-800">
+    <div className="overflow-x-auto surface-panel">
+      <h3 className="text-lg font-bold mb-4">Top Product</h3>
+      <table className="min-w-full divide-y divide-current/10">
         <thead>
           <tr>
-            <th className="px-6 py-3 text-right text-xs text-center font-medium text-[#9CA3AF] uppercase">Product Name</th>
-            <th className="px-6 py-3 text-right text-xs font-medium text-[#9CA3AF] uppercase">Sales</th>
+            <th className="px-6 py-3 text-right text-xs text-center font-medium uppercase opacity-60">Product Name</th>
+            <th className="px-6 py-3 text-right text-xs font-medium uppercase opacity-60">Sales</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-[#FFEDD5] dark:divide-gray-800">
+        <tbody className="divide-y divide-current/10">
           {products.map((product) => (
-            <tr key={product._id || product.id} className="hover:bg-[#FFEDD5] dark:hover:bg-gray-800 transition-colors">
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-[#1F2937] dark:text-[#FFF7ED] font-medium">
+            <tr key={product._id || product.id} className="hover:bg-current/5 transition-colors">
+              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                 {product.name}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-[#F97316] font-bold">

@@ -1,390 +1,98 @@
-1. API DOCUMENTATION
-
-API URL:
-https://e-commerce-api-3wara.vercel.app
-
-Login:
-POST /auth/login
-
-Login Body:
-{
-"email": "[admin@koda.com](mailto:admin@koda.com)",
-"password": "ADMIN_PASSWORD"
-}
-
-Login Response:
-
-* success
-* token
-* user
-
-User Data:
-
-* id (_id)
-* username
-* email
-* role
-* avatar
-
-Admin Role:
-user.role === "admin"
-
-Authentication:
-
-* Token returned in response
-* Token also stored as HttpOnly Secure cookie
-
-Protected:
-
-* GET /auth/me
-* GET /auth/admin-test
-* PATCH /auth/change-role
-* Admin user endpoints
-
-STATUS:
-API Documentation → MOSTLY DONE
-Remaining: confirm /auth/me, Authorization format, and 401 response.
-
-
-2. ENVIRONMENT
-
-.env:
-VITE_API_URL=https://e-commerce-api-3wara.vercel.app
-
-.env.example:
-VITE_API_URL=https://e-commerce-api-3wara.vercel.app
-
-.gitignore:
-.env
-.env.local
-.env.*.local
-
-STATUS:
-Environment Configuration → DONE
-
-Security:
-
-* No passwords committed
-* No tokens committed
-* API URL is accessed with import.meta.env.VITE_API_URL
-* No hard-coded API URL
-
-
-auth.js
-login(data)
-    → POST /auth/login
-
-logout()
-    → POST /auth/logout
-
-getMe()
-    → GET /auth/me
-users.js
-getUsers()
-    → GET /users/all
-
-addUser(data)
-    → POST /users/add
-
-getUserById(id)
-    → GET /users/{id}
-
-updateUser(id, data)
-    → PATCH /users/{id}
-
-deleteUser(id)
-    → DELETE /users/{id}
-products.js
-getProducts()
-    → GET /products
-
-addProduct(data)
-    → POST /products
-
-searchProducts(query)
-    → GET /products/search
-
-getProductById(id)
-    → GET /products/{id}
-
-updateProduct(id, data)
-    → PATCH /products/update/{id}
-
-deleteProduct(id)
-    → DELETE /products/{id}
-orders.js
-getOrders()
-    → GET /orders/admin/dashboard
-
-getCarts()
-    → GET /orders/admin/carts
-
-getOrdersAdmin()
-    → GET /orders/admin
-
-getOrder(id)
-    → GET /orders/admin/{id}
-
-orderStatus(id, status)
-    → PATCH /orders/admin/{id}/status
-wishlist.js
-getWishlists()
-    → GET /wishlists/admin/all
-
-getWishlistsStats()
-    → GET /wishlists/admin/stats
-Complete frontend API list
-AUTH
-login(data)
-logout()
-getMe()
-
-USERS
-getUsers()
-addUser(data)
-getUserById(id)
-updateUser(id, data)
-deleteUser(id)
-
-PRODUCTS
-getProducts()
-addProduct(data)
-searchProducts(query)
-getProductById(id)
-updateProduct(id, data)
-deleteProduct(id)
-
-ORDERS
-getOrders()
-getCarts()
-getOrdersAdmin()
-getOrder(id)
-orderStatus(id, status)
-
-WISHLISTS
-getWishlists()
-getWishlistsStats()
-How the team uses them
-
-For example, a Users page can simply do:
-
-import { getUsers } from "../api/users"
-
-Then call:
-
-getUsers()
-
-The page doesn't need to know the URL, Axios configuration, cookies, or authentication details.
-
-That's the whole point of this API layer:
-
-Frontend Page
-     ↓
-API Function
-     ↓
-Shared axios.js
-     ↓
-Backend API
-
-Yes. For Section 4 — AuthContext.jsx, these are the outputs/results you should record:
-
-Section 4 — AuthContext Outputs
-AuthContext
-├── user                 ✅
-├── token                ✅
-├── isAuthenticated      ✅
-├── loading              ✅
-├── login()              ✅
-├── logout()             ✅
-└── session restore      ✅
-API Connection
-POST /auth/login        ✅
-POST /auth/logout       ✅
-GET  /auth/me           ✅
-Login
-Email + Password
-      ↓
-/auth/login
-      ↓
-Token + User
-      ↓
-AuthContext
-      ↓
-Authenticated
-Session Restore
-Page Refresh
-     ↓
-/auth/me
-     ↓
-User restored
-     ↓
-isAuthenticated = true
-Logout
-logout()
-   ↓
-/auth/logout
-   ↓
-User cleared
-Token cleared
-isAuthenticated = false
-Security
-Admin password in source code     ❌
-Admin password in .env.example    ❌
-Token in localStorage             ❌
-Authentication cookie              ✅ HttpOnly
-
-
-3. src/api/axios.js — Outputs
-Shared Axios Client
-├── Uses VITE_API_URL                 ✅
-├── Single Axios instance             ✅
-├── withCredentials: true             ✅
-├── Sends authentication cookies      ✅
-├── Reusable across all API files     ✅
-└── No duplicate Axios clients        ✅
-Request Flow
-Frontend Page
-      ↓
-API Function
-      ↓
-axios.js
-      ↓
-withCredentials: true
-      ↓
-Authentication Cookie
-      ↓
-Backend API
-Authentication
-Login
- ↓
-Backend sets HttpOnly cookie
- ↓
-Browser stores cookie
- ↓
-Axios sends cookie automatically
- ↓
-Protected API works
-
-STATUS: Axios Client → DONE ✅
-
-5. src/routes/ProtectedRoute.jsx — Outputs
-ProtectedRoute
-├── Checks authentication           ⏳
-├── Checks authenticated user       ⏳
-├── Checks user.role === "admin"    ⏳
-├── Blocks unauthenticated users    ⏳
-├── Blocks non-admin users          ⏳
-└── Allows admin users              ⏳
-Expected Flow
-/dashboard
-      ↓
-ProtectedRoute
-      ↓
-Authenticated?
-   ↙       ↘
- NO         YES
- ↓           ↓
-/login    role === "admin"?
-             ↙      ↘
-           NO        YES
-           ↓          ↓
-        Block       Dashboard
-
-STATUS: ProtectedRoute → NOT DONE YET ⏳
-
-6. Dashboard Routing — Outputs
-Routing
-├── /login                  ⏳
-├── /dashboard              ⏳
-├── /dashboard protected   ⏳
-└── ProtectedRoute wrapper ⏳
-Expected Result
-User
- ↓
-/dashboard
- ↓
-ProtectedRoute
- ↓
-Admin authenticated?
- ↓
-Dashboard
-
-STATUS: Dashboard Protection → NOT DONE YET ⏳
-
-7. Logout — Outputs
-
-We tested the backend side:
-
-POST /auth/logout
-        ↓
-200 OK                    ✅
-        ↓
-Set-Cookie token=         ✅
-        ↓
-Expires in the past       ✅
-
-But the frontend/browser session is still remaining, so:
-
-logout()
-   ↓
-/auth/logout              ✅
-   ↓
-Cookie cleared by API     ⚠️
-   ↓
-Frontend user cleared     ⏳
-   ↓
-isAuthenticated = false   ⏳
-   ↓
-/dashboard blocked       ⏳
-
-STATUS: Logout → NEEDS FIXING ⚠️
-
-8. API Testing — Outputs
-
-We've already confirmed the protected API layer works with the cookie:
-
-AUTH
-├── Login                    ✅
-├── Get Me                   ✅
-└── Logout endpoint          ✅
-
-USERS
-├── Get Users                ✅
-└── Get User                 ✅
-
-PRODUCTS
-├── Get Products             ✅
-├── Search Products          ✅
-├── Get Product              ✅
-├── Add Product              ✅
-├── Update Product           ✅
-└── Delete Product           ✅
-
-ORDERS
-├── Dashboard Stats          ✅
-├── Get Carts                ✅
-├── Get Orders               ✅
-├── Get Order                ✅
-└── Update Order Status      ✅
-
-WISHLISTS
-├── Get Wishlists            ✅
-└── Wishlist Stats           ✅
-
-STATUS: API Layer → DONE ✅
-
-Final Task Status
-1. API Documentation       ✅ DONE
-2. Environment             ✅ DONE
-3. Axios Client            ✅ DONE
-4. AuthContext             🟡 MOSTLY DONE
-5. ProtectedRoute           ⏳ TODO
-6. Dashboard Routing        ⏳ TODO
-7. Logout                   ⚠️ NEEDS FIX
-8. API Functions            ✅ DONE
-9. API Testing              ✅ DONE
-10. Security                ✅ DONE
-
-So the only real work left for this Phase 0 task is:
-
-Logout fix → ProtectedRoute → Dashboard route protection → final test.
+Online Store Dashboard - Fix Notes
+
+Date: 2026-09-06
+
+What was fixed:
+- Removed unresolved Git merge-conflict markers from the source files.
+- Resolved duplicate and conflicting route imports in src/App.jsx.
+- Fixed AuthContext.jsx syntax and duplicate closing braces.
+- Resolved API conflicts in axios.js, products.js, and users.js.
+- Consolidated the Button and Spinner components after the merge conflict.
+- Preserved the dashboard layout with Sidebar, Topbar, and routed pages.
+- Fixed the OrderStatusBadge export mismatch by adding a named export while keeping the default export.
+- Implemented the missing ViewProductPage component so its route no longer causes a runtime blank page.
+- Confirmed lucide-react dependencies are installed and available.
+- Added a branded public/favicon.svg and linked it from index.html.
+- Adjusted the login page for short desktop viewports so lower controls remain visible or scrollable at 100% zoom.
+- Added password-reset OTP API helpers for `/auth/forgot-password/send-otp` and `/auth/forgot-password/verify-otp`.
+- Connected the login page's Forgot password action to a two-step OTP reset modal with email, OTP, and new-password fields.
+- Added validation, loading states, success messages, and API error handling for the OTP flow.
+- Restricted product cards, dashboard calculations, and order results to products whose subcategory or tags match `team-1-product`.
+- Centralized team-1 product/order filtering so unrelated products do not appear or contribute to totals.
+
+Date: 2026-09-06 (session 2) — Orders, Carts, Settings
+
+What was fixed/built:
+- OrdersTable, Modal, and (indirectly used) ProductForm were stub placeholders rendering nothing (`<div>OrdersTable</div>` etc.). Implemented OrdersTable and Modal for real; ProductForm is unused dead code (AddProductPage has its own inline form) so it was left alone.
+- OrderStatusBadge used dynamic Tailwind class names (`bg-${color}-100`) that Tailwind can never generate at build time, so status badges had no color at all. Rewrote it to use the existing `.status-badge` CSS system.
+- Fixed a CSS bug where pending/processing/confirmed/shipped/delivered orders all rendered with the exact same green badge (only "cancelled" had its own color). Each status now has a distinct color, including "returned" which had no style at all.
+- Rebuilt /dashboard/orders (OrdersListPage): it was calling `axios.get` directly (bypassing the app's configured `api` instance/interceptor) with an Authorization header built from `user?.token`, a field that never exists on the user object (token is stored separately in AuthContext) — so every request went out unauthenticated. Now uses `getOrdersAdmin()` / `getProducts()`. Added search, status filter, date-range filter, stats cards, and pagination, and switched the page from a mismatched light Tailwind theme to the app's real dark/orange design system (same pattern as Products/Users pages).
+- Orders are now filtered to only the current team's orders: an order is included only if at least one line item's product has subcategory or tags equal to "team-1-product" (same convention already used in components/charts/RevenueLineChart.jsx).
+- Rebuilt /dashboard/carts (CartsViewPage): it rendered hardcoded mock data and was never added to App.jsx's routes, so the Sidebar's "Carts" link went nowhere (fell through to the catch-all redirect). Added the route, wired it to the real `getCarts()` API, matched the dark theme, and added a "View" modal listing cart items.
+- Added /dashboard/settings: the Sidebar already linked to it but the page and route never existed. Built a Profile Information card and a Security (change password) card wired to the real users API (`updateUser`).
+- Fixed the shared Modal component (`common/Modal.jsx`) — it was a `<div>Modal</div>` stub that ignored isOpen/onClose/children entirely, so anything using it (e.g. the unused OrderDetailModal) was broken. It's now a real dialog and is used by the new Carts "view" modal.
+- Fixed the shared Button component: it emitted classes like `btn btn-primary btn-md`, but no CSS for `.btn`/`.btn-primary`/etc. existed anywhere except deep inside the product-create page's form, so Button rendered unstyled everywhere else. Added base button styles.
+- Changed the Category field on the Add/Edit Product form from free text to a `<select>` populated from existing product categories, with an "Add new category" option that reveals a text field when a genuinely new category is needed.
+- Added `setUser` to AuthContext so saving profile changes on the Settings page updates the logged-in session (Topbar, etc.) immediately instead of only the local form.
+
+Verification (session 2):
+- `npm run build` completes successfully after all changes.
+- /dashboard/orders, /dashboard/carts, /dashboard/settings all serve correctly instead of falling through to the catch-all redirect.
+- Could not verify the authenticated dashboard UI visually in a real browser from this session — no test/admin credentials are available in the repo and the app talks to the live production API, so login could not be completed here. Please review the three pages in your own logged-in browser session; the running dev server on :5173 should already show these changes via hot reload.
+
+Verification:
+- Repository-wide merge-marker scan is clean.
+- npm run build completes successfully.
+- Browser reload renders the login page without runtime errors.
+- Sign In and Secure Admin Access are visible after the login layout adjustment.
+- Browser reports /favicon.svg as the active favicon.
+- npm run build passes after the OTP integration.
+- npm run build passes after the team-1 filtering update.
+- Fixed product creation 500 errors by encoding multipart `tags` as the API-required JSON array string.
+- Added client-side validation requiring at least one image for new products, matching the deployed API contract.
+- Removed nonessential explanatory, debug, and placeholder comments from source files.
+- Fixed normal-zoom horizontal overflow by constraining the document shell, dashboard pages, grids, and topbar flex content.
+- Confirmed the layout and comment cleanup with a successful production build.
+- Fixed product upload "Unexpected field" errors by enforcing the API's five-image limit before sending multipart data.
+- Corrected multipart tag encoding after API validation: tags are sent as repeated fields so the backend receives an array.
+- Replaced product card action text with icon-only View, Edit, Quick Edit, and Delete buttons with accessible labels and tooltips.
+- Wired the topbar theme button to persistent light/dark mode using `data-theme` and localStorage.
+- Added a working notifications popover that loads pending-order notifications from the admin orders API.
+- Verified the theme and notification changes with a successful production build.
+- Improved light-mode sidebar contrast for brand text, navigation labels/icons, active state, and API status text.
+- Fixed remaining dark elements in light mode across tables, modals, inputs, settings, carts, orders, product rows, and secondary buttons.
+- Overrode dark Tailwind slate utilities in order detail pages and modals so they follow light mode instead of rendering black panels.
+- Removed OS-dependent `dark:` Tailwind variants from chart components and added a final light-mode fallback for remaining dark utility backgrounds.
+- Fixed black page-specific surfaces in Users, Products, Add/Edit, Orders, and Carts light mode.
+- Made QuickEditProductPage functional by reusing the working product edit form with the route product ID.
+- Removed the READY callout from the add-product page header.
+- Added a visible shared loading screen and spinner styling for product loading states.
+- Fixed remaining light-mode cards by changing stat/state card backgrounds to white and overriding inherited white text with dark text.
+- Improved the main dashboard hierarchy with stronger hero/stat spacing, responsive tracks, panel elevation, and hover states for cards, status items, products, and orders.
+- Fixed the add-product gallery light-mode placeholder and upload dropzone colors, and removed the oversized empty uploader spacing.
+- Changed the purple Quick Edit product action to open an in-page modal for price, stock, and featured updates.
+- Added a multi-image product-card carousel with arrows and dots.
+- Made Quick Edit reuse the full product editor inside a large modal and set the application default theme to light mode.
+- Updated the topbar account chip to show the authenticated user's real name, initials, and role.
+- React Router only reports non-blocking future-flag warnings.
+
+Date: 2026-09-06 (session 3) — Product Details page + Edit Product modal
+
+Context: no design PDF/image file actually reached this session (only a detailed text brief describing the two screens), so the existing dark/orange design system already in index.css was kept rather than introducing a clashing cyan/blue palette. All changes reuse the existing API layer (api/products.js), AuthContext, and shared components (Modal, Button, Spinner, ImageUploader) — no new API endpoints, no fake data, no parallel auth.
+
+What was found:
+- ViewProductPage.jsx (route /dashboard/products/:id/view) already existed as a working, fully API-driven Product Details page with a real getProductById call, loading/error states, and an image gallery — it just lacked prev/next arrows, carousel indicators, and a clearer sectioned layout for price/discount/stock/SKU/brand/tags.
+- The "Edit Product modal" already existed too: App.jsx's QuickEditModalHost listens for a `quick-edit-product` window event (dispatched from the Products list "Quick Edit" button) and renders the existing AddProductPage form (which already supports both create and edit via a productId/onClose prop) inside the shared Modal component with a wide `.full-product-edit-modal` layout. It already fetched the real product, populated every field/tag/image from the API, supported adding/removing images, and called the real updateProduct (PATCH /products/update/:id) on save, refreshing the list via a `products-refresh` event.
+- ProductsListPage.jsx had a second, half-built quick-edit mechanism (quickEditTarget/quickEditForm/saveQuickEdit calling updateProduct directly) whose modal UI was never actually rendered anywhere — pure dead state left over from an earlier session.
+
+What was changed:
+- ViewProductPage.jsx: added left/right navigation arrows and dot indicators to the main product image (only when there is more than one image), and restructured the right column into distinct rounded info cards — Overview/Description, Price + Discount + Stock, Product Information (SKU/Brand/Category/Subcategory/Active), and Tags — instead of one flat block. All values still come straight from the real API response with the same graceful fallbacks as before (name||title, description||shortDescription, stock||quantity, etc.).
+- index.css: added `.product-detail-nav-arrow`, `.product-detail-indicators`, and `.product-detail-info-card`/`.product-detail-pricing` rules (dark theme + light-theme overrides) for the above, reusing the app's existing color tokens.
+- AddProductPage.jsx (the component behind both the full Add/Edit pages and the Edit Product modal): replaced the plain Featured/Active checkboxes with proper toggle buttons (Featured/Active), which better match "status control" styling and are driven by the same form state that's already populated from and submitted to the real API. Updated the gallery section copy to say "Product Gallery" and clarify that existing images are shown and can be removed/added to, when in edit mode.
+- index.css: added `.status-toggle-button` styles for the new toggle buttons and made `.product-toggles` wrap on narrow screens.
+- ProductsListPage.jsx: removed the dead, never-rendered quickEditTarget/quickEditForm/quickEditSaving state and its unused updateProduct/Modal imports, since the working Edit Product modal is the one in App.jsx/QuickEditModalHost — this avoids two competing, out-of-sync "quick edit" implementations touching the same API.
+
+Verification:
+- `npm run build` completes successfully after all changes.
+- Started the Vite dev server and confirmed it boots without errors; could not click through the authenticated dashboard UI in a real browser from this session because no admin credentials are available here and the app talks to the live production API (same limitation noted in session 2) — please review the Product Details page and the Products list's "Quick Edit"/"Edit" actions in your own logged-in browser; the dev server picks up these changes via hot reload.
+- No API endpoints, field names, or auth handling were changed — only presentation/markup around the existing getProductById/updateProduct calls.

@@ -3,7 +3,6 @@ import axios from 'axios';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import Spinner from '../common/Spinner'; 
 import EmptyState from '../common/EmptyState';
-///////////////////
 export default function RevenueLineChart() {
 const [revenueData, setRevenueData] = useState([]);
 const [loading, setLoading] = useState(true);
@@ -30,8 +29,8 @@ useEffect(() => {
 if (loading) return <Spinner />;
 
 return (
-  <div className="bg-[#FFF7ED] dark:bg-[#1F2937] shadow-md rounded-lg p-6 border border-[#FFEDD5] dark:border-gray-800 transition-colors">
-    <h3 className="text-lg font-bold mb-4 text-[#1F2937] dark:text-[#FFF7ED] text-center">Revenue (Last 7 Days)</h3>
+  <div className="surface-panel">
+    <h3 className="text-lg font-bold mb-4 text-center">Revenue (Last 7 Days)</h3>
 
     <div className="h-64 w-full">
       <ResponsiveContainer width="100%" height="100%">

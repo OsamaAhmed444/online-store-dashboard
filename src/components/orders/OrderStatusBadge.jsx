@@ -1,20 +1,13 @@
 import React from 'react'
 
-const statusColors = {
-  pending: 'warning',
-  processing: 'info',
-  shipped: 'info',
-  delivered: 'success'
-}
-
-export default function OrderStatusBadge({ status }) {
-  const colorClass = statusColors[status] || 'info'
+export function OrderStatusBadge({ status }) {
+  const label = status ? status.charAt(0).toUpperCase() + status.slice(1) : 'Pending'
 
   return (
-    <span
-      className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-${colorClass}-100 text-${colorClass}-800`}
-    >
-      {status}
+    <span className={`status-badge ${String(status || 'pending').toLowerCase()}`}>
+      {label}
     </span>
   )
 }
+
+export default OrderStatusBadge

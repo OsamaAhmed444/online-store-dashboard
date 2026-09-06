@@ -11,3 +11,11 @@ export const logout = () => {
 export const getMe = () => {
   return api.get("/auth/me");
 };
+
+export const sendPasswordResetOtp = (email) => {
+  return api.post("/auth/forgot-password/send-otp", { email });
+};
+
+export const resetPasswordWithOtp = (data) => {
+  return api.post("/auth/forgot-password/verify-otp", data);
+};

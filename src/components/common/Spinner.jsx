@@ -19,7 +19,7 @@ export function Spinner({ size = 'md', className = '', text = '', ...props }) {
           aria-label="Loading"
           className={spinnerClassName}
         />
-        <p className="text-sm text-gray-600">{text}</p>
+        <p className="text-sm empty-state-message">{text}</p>
       </div>
     )
   }
@@ -31,6 +31,15 @@ export function Spinner({ size = 'md', className = '', text = '', ...props }) {
       className={spinnerClassName}
       {...props}
     />
+  )
+}
+
+export function LoadingScreen({ text = 'Loading...' }) {
+  return (
+    <div className="loading-screen" role="status" aria-live="polite">
+      <span className="spinner h-8 w-8" aria-hidden="true" />
+      <span>{text}</span>
+    </div>
   )
 }
 
