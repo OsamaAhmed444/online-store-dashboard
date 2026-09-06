@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import axios from 'axios'
+import api from '../../api/axios'
 import Spinner from '../common/Spinner'
 import EmptyState from '../common/EmptyState'
 
@@ -12,7 +12,7 @@ export default function TopProductsTable() {
     const fetchTopProducts = async () => {
       try {
         setLoading(true)
-        const response = await axios.get('https://e-commerce-api-3wara.vercel.app/orders/admin/dashboard')
+        const response = await api.get('/orders/admin/dashboard')
 
         const allProducts = response.data?.dashboard?.topProducts || []
         setProducts(allProducts)
