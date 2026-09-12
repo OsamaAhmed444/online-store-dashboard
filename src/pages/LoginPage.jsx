@@ -206,7 +206,9 @@ export default function LoginPage() {
           </Button>
         </form>
 
-        <div className="login-divider"><span>OR</span></div><button type="button" className="login-google"><strong>G</strong> Continue with Google <ArrowRight /></button><div className="login-secure"><ShieldCheck /> Secure Admin Access</div>
+        <button type="button" className="login-google">
+  <strong className="text-orange">G</strong> Continue with Google <ArrowRight />
+</button>
         </section>
       </div>
       <Modal isOpen={isResetOpen} onClose={() => setIsResetOpen(false)} title="Reset password" className="login-reset-modal">
