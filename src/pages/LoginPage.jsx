@@ -206,9 +206,11 @@ export default function LoginPage() {
           </Button>
         </form>
 
-        <button type="button" className="login-google">
-  <strong className="text-orange">G</strong> Continue with Google <ArrowRight />
+        <div className="login-divider"><span>OR</span></div>
+<button type="button" className="login-google">
+  <strong style={{ color: 'orange' }}>G</strong> Continue with Google <ArrowRight />
 </button>
+<div className="login-secure"><ShieldCheck /> Secure Admin Access</div>
         </section>
       </div>
       <Modal isOpen={isResetOpen} onClose={() => setIsResetOpen(false)} title="Reset password" className="login-reset-modal">
