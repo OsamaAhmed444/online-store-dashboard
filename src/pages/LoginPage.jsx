@@ -14,7 +14,6 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 export default function LoginPage() {
   const navigate = useNavigate()
   const { login } = useAuth()
-
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -234,6 +233,10 @@ export default function LoginPage() {
           <Button type="submit" loading={isResetting} className="login-submit">{resetStep === 'email' ? 'Send OTP' : 'Reset Password'}</Button>
         </form>
       </Modal>
+    </div>
+  )
+}
+
     </div>
   )
 }
