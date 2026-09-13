@@ -16,6 +16,8 @@ import UsersListPage from './pages/UsersListPage'
 import CartsViewPage from './pages/CartsViewPage'
 import SettingsPage from './pages/SettingsPage'
 import Modal from './components/common/Modal'
+import { useAuth } from './context/AuthContext'
+import { SessionLoadingScreen } from './components/common/Spinner'
 
 function QuickEditModalHost() {
   const [product, setProduct] = useState(null)
@@ -33,6 +35,12 @@ function QuickEditModalHost() {
 }
 
 export default function App() {
+  const { loading } = useAuth()
+
+  if (loading) {
+    return <SessionLoadingScreen visible />
+  }
+
   return (
     <>
       <Routes>
@@ -68,7 +76,3 @@ export default function App() {
   )
 }
 
-
-
-
- 
