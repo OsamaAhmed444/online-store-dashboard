@@ -39,7 +39,3 @@ export default function ProtectedRoute({ children }) {
   return children
 }
 
-  }
-
-  return children
-}
