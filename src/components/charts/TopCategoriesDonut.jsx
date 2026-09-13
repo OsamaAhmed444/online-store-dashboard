@@ -2,7 +2,7 @@ import React, { useMemo } from 'react'
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
 import EmptyState from '../common/EmptyState'
 
-const PALETTE = ['#3b82f6', '#22c55e', '#f59e0b', '#a855f7', '#ec4899', '#94a3b8']
+const PALETTE = ['#f59e0b', '#22c55e', '#3b82f6', '#a855f7', '#ec4899', '#94a3b8']
 
 function aggregateCategories(products, topProducts) {
   const soldByKey = new Map(topProducts.map((product) => [product.id || product.name, product.quantity]))
