@@ -1,13 +1,22 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { toast } from 'react-toastify'
 
 import { useAuth } from '../context/AuthContext'
-import Spinner from '../components/common/Spinner'
+import { SessionLoadingScreen } from '../components/common/Spinner'
 
 export default function ProtectedRoute({ children }) {
   const { isAuthenticated, loading, user } = useAuth()
   const isAdmin = user?.role === 'admin'
+  const [showSessionLoader, setShowSessionLoader] = useState(true)
+
+  useEffect(() => {
+    if (!loading) {
+      const frame = requestAnimationFrame(() => setShowSessionLoader(false))
+      return () => cancelAnimationFrame(frame)
+    }
+    setShowSessionLoader(true)
+  }, [loading])
 
   useEffect(() => {
     if (!loading && isAuthenticated && !isAdmin) {
@@ -15,8 +24,8 @@ export default function ProtectedRoute({ children }) {
     }
   }, [loading, isAuthenticated, isAdmin])
 
-  if (loading) {
-    return <Spinner />
+  if (loading || showSessionLoader) {
+    return <SessionLoadingScreen visible={loading || showSessionLoader} />
   }
 
   if (!isAuthenticated) {
@@ -25,6 +34,11 @@ export default function ProtectedRoute({ children }) {
 
   if (!isAdmin) {
     return <Navigate to="/login" replace />
+  }
+
+  return children
+}
+
   }
 
   return children
