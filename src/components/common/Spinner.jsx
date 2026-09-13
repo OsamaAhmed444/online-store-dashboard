@@ -1,4 +1,5 @@
 import React from 'react'
+import { Package } from 'lucide-react'
 
 const SIZE_CLASSES = {
   sm: 'h-4 w-4',
@@ -39,6 +40,27 @@ export function LoadingScreen({ text = 'Loading...' }) {
     <div className="loading-screen" role="status" aria-live="polite">
       <span className="spinner h-8 w-8" aria-hidden="true" />
       <span>{text}</span>
+    </div>
+  )
+}
+
+export function SessionLoadingScreen({ visible = true }) {
+  return (
+    <div className={`session-loading-screen ${visible ? 'session-loading-screen-visible' : 'session-loading-screen-hidden'}`} role="status" aria-live="polite">
+      <div className="session-loading-card">
+        <div className="session-loading-ring" aria-hidden="true">
+          <div className="session-loading-core" />
+        </div>
+        <h2>Loading Session</h2>
+        <div className="session-loading-status">
+          <p>Verifying authentication...</p>
+          <div className="session-loading-dots" aria-label="Loading">
+            <span />
+            <span />
+            <span />
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
